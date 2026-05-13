@@ -202,6 +202,9 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
+        <div className="flex justify-end">
+          <ExportButton rows={data ?? []} filename={table} />
+        </div>
         {canEdit && (
           <div className="flex gap-2">
             <Input placeholder={`Novo ${label}…`} value={novo} onChange={(e) => setNovo(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
