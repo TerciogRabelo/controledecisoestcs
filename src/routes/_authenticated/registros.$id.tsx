@@ -132,14 +132,15 @@ function RegistroFormPage() {
   const { data: lookups } = useQuery({
     queryKey: ["lookups"],
     queryFn: async () => {
-      const [u, o, td, tj, tdel] = await Promise.all([
+      const [u, o, td, tj, tdel, ut] = await Promise.all([
         supabase.from("unidades_gestoras").select("id, nome_unidade, sigla").eq("status", true).order("nome_unidade"),
         supabase.from("orgaos_julgadores").select("id, descricao").eq("ativo", true).order("descricao"),
         supabase.from("tipos_decisao").select("id, descricao").eq("ativo", true).order("descricao"),
         supabase.from("tipos_julgamento").select("id, descricao").eq("ativo", true).order("descricao"),
         supabase.from("tipos_deliberacao").select("*").eq("ativo", true).order("descricao"),
+        (supabase as any).from("unidades_tecnicas").select("id, nome, sigla").eq("ativo", true).order("nome"),
       ]);
-      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [] };
+      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [], unidadesTec: ut.data ?? [] };
     },
   });
 
@@ -312,7 +313,9 @@ function RegistroFormPage() {
       {!isNew && registroId && (
         <DeliberacoesGrid
           registroId={registroId}
+          numeroProcessoOrigem={form.numero_processo}
           tipos={lookups?.tiposDel ?? []}
+          unidadesTec={lookups?.unidadesTec ?? []}
           deliberacoes={deliberacoes ?? []}
           onChange={refetchDel}
           canEdit={canEdit}
@@ -359,17 +362,20 @@ function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" |
   return { label: `${diff}d restantes`, tone: "ok" };
 }
 
-function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }: {
+function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, deliberacoes, onChange, canEdit }: {
   registroId: string;
+  numeroProcessoOrigem: string;
   tipos: any[];
+  unidadesTec: any[];
   deliberacoes: any[];
   onChange: () => void;
   canEdit: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const emptyForm = { status_monitoramento: "em_monitoramento", deliberacao_solidaria: false };
+  const emptyForm = { status_monitoramento: "em_monitoramento", deliberacao_solidaria: false, anexos: [] as any[] };
   const [form, setForm] = useState<any>(emptyForm);
+  const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
 
   const tipoSel = tipos.find((t) => t.id === form.tipo_deliberacao_id);
@@ -390,8 +396,43 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
       resposta_gestor: d.resposta_gestor,
       resultado_monitoramento: d.resultado_monitoramento,
       data_verificacao: d.data_verificacao,
+      unidade_tecnica_id: d.unidade_tecnica_id,
+      monitoramento_inicio: d.monitoramento_inicio,
+      monitoramento_fim: d.monitoramento_fim,
+      monitoramento_tipo: d.monitoramento_tipo,
+      monitoramento_processo_origem: d.monitoramento_processo_origem,
+      monitoramento_numero_processo: d.monitoramento_numero_processo,
+      anexos: d.anexos ?? [],
     });
     setOpen(true);
+  };
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const newAnexos: any[] = [...(form.anexos ?? [])];
+      for (const file of Array.from(files)) {
+        const path = `${registroId}/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage.from("deliberacao-anexos").upload(path, file);
+        if (error) { toast.error(`Falha ao enviar ${file.name}: ${error.message}`); continue; }
+        newAnexos.push({ path, nome: file.name, tamanho: file.size, criado_em: new Date().toISOString() });
+      }
+      setForm({ ...form, anexos: newAnexos });
+      toast.success("Evidência(s) enviada(s).");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAnexo = async (path: string) => {
+    await supabase.storage.from("deliberacao-anexos").remove([path]);
+    setForm({ ...form, anexos: (form.anexos ?? []).filter((a: any) => a.path !== path) });
+  };
+
+  const downloadAnexo = async (path: string) => {
+    const { data } = await supabase.storage.from("deliberacao-anexos").createSignedUrl(path, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
   const submit = async () => {
@@ -402,17 +443,32 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
     }
     if (form.data_inicio_prazo && form.data_inicio_prazo > TODAY) { toast.error("Data de início do prazo não pode ser futura."); return; }
     if (form.data_verificacao && form.data_verificacao > TODAY) { toast.error("Data de verificação não pode ser futura."); return; }
+    if (form.monitoramento_inicio && form.monitoramento_fim && form.monitoramento_fim < form.monitoramento_inicio) {
+      toast.error("Fim do monitoramento não pode ser anterior ao início."); return;
+    }
+    if (form.monitoramento_tipo === "processual" && form.monitoramento_processo_origem === false && !form.monitoramento_numero_processo?.trim()) {
+      toast.error("Informe o número do outro processo de monitoramento."); return;
+    }
+
+    const payload: any = { ...form };
+    if (form.monitoramento_tipo === "processual" && form.monitoramento_processo_origem) {
+      payload.monitoramento_numero_processo = numeroProcessoOrigem;
+    }
+    if (form.monitoramento_tipo === "extraprocessual") {
+      payload.monitoramento_processo_origem = null;
+      payload.monitoramento_numero_processo = null;
+    }
 
     if (editing) {
       const { error } = await supabase
         .from("deliberacoes")
-        .update({ ...form, atualizado_por: user?.id })
+        .update({ ...payload, atualizado_por: user?.id })
         .eq("id", editing.id);
       if (error) { toast.error(error.message); return; }
       toast.success("Deliberação atualizada.");
     } else {
-      const payload = { ...form, registro_decisao_id: registroId, criado_por: user?.id, atualizado_por: user?.id };
-      const { error } = await supabase.from("deliberacoes").insert(payload);
+      const ins = { ...payload, registro_decisao_id: registroId, criado_por: user?.id, atualizado_por: user?.id };
+      const { error } = await supabase.from("deliberacoes").insert(ins);
       if (error) { toast.error(error.message); return; }
       toast.success("Deliberação adicionada.");
     }
@@ -435,66 +491,139 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
         {canEdit && (
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
             <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova</Button></DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{editing ? "Editar Deliberação" : "Nova Deliberação"}</DialogTitle></DialogHeader>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Tipo de Deliberação *">
-                  <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} />
-                </Field>
-                <Field label="Status">
-                  <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <div className="col-span-2">
-                  <Field label="Descrição">
-                    <Textarea value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} />
+
+              {/* Bloco 1: Deliberação */}
+              <div className="rounded-md border border-border p-4 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Deliberação</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Tipo de Deliberação *">
+                    <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} />
                   </Field>
-                </div>
-                {tipoSel?.gera_prazo && (
-                  <>
-                    <Field label="Data de Início do Prazo *">
-                      <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} />
+                  <Field label="Status">
+                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="Descrição">
+                      <Textarea value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} />
                     </Field>
-                    <Field label="Prazo (dias) *">
-                      <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                  {tipoSel?.gera_prazo && (
+                    <>
+                      <Field label="Data de Início do Prazo *">
+                        <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} />
+                      </Field>
+                      <Field label="Prazo (dias) *">
+                        <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} />
+                      </Field>
+                    </>
+                  )}
+                  {tipoSel?.permite_valor && (
+                    <Field label="Valor (R$)">
+                      <Input type="number" step="0.01" value={form.valor ?? ""} onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })} />
                     </Field>
-                  </>
-                )}
-                {tipoSel?.permite_valor && (
-                  <Field label="Valor (R$)">
-                    <Input type="number" step="0.01" value={form.valor ?? ""} onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })} />
-                  </Field>
-                )}
-                {tipoSel?.permite_unidade_medida && (
-                  <Field label="Unidade de Medida">
-                    <Input value={form.unidade_medida ?? ""} onChange={(e) => setForm({ ...form, unidade_medida: e.target.value })} />
-                  </Field>
-                )}
-                <Field label="Data de Verificação">
-                  <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} />
-                </Field>
-                <div className="col-span-2">
-                  <Field label="Resposta do Gestor">
-                    <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} />
-                  </Field>
-                </div>
-                <div className="col-span-2">
-                  <Field label="Resultado do Monitoramento">
-                    <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} />
-                  </Field>
-                </div>
-                <div className="col-span-2">
-                  <Field label="Observação">
-                    <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} />
-                  </Field>
+                  )}
+                  {tipoSel?.permite_unidade_medida && (
+                    <Field label="Unidade de Medida">
+                      <Input value={form.unidade_medida ?? ""} onChange={(e) => setForm({ ...form, unidade_medida: e.target.value })} />
+                    </Field>
+                  )}
+                  <div className="col-span-2">
+                    <Field label="Observação">
+                      <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} />
+                    </Field>
+                  </div>
                 </div>
               </div>
+
+              {/* Bloco 2: Monitoramento */}
+              <div className="rounded-md border-2 border-dashed border-primary/40 bg-primary/5 p-4 space-y-3 mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Monitoramento</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Unidade Técnica Responsável">
+                    <SelectField
+                      value={form.unidade_tecnica_id ?? null}
+                      onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
+                      options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
+                    />
+                  </Field>
+                  <Field label="Tipo de Monitoramento">
+                    <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="processual">Processual</SelectItem>
+                        <SelectItem value="extraprocessual">Extraprocessual (sem processo)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Início do Monitoramento">
+                    <Input type="date" value={form.monitoramento_inicio ?? ""} onChange={(e) => setForm({ ...form, monitoramento_inicio: e.target.value })} />
+                  </Field>
+                  <Field label="Fim Previsto do Monitoramento">
+                    <Input type="date" value={form.monitoramento_fim ?? ""} onChange={(e) => setForm({ ...form, monitoramento_fim: e.target.value })} />
+                  </Field>
+                  {form.monitoramento_tipo === "processual" && (
+                    <>
+                      <Field label="Processo do Monitoramento">
+                        <Select
+                          value={form.monitoramento_processo_origem === true ? "origem" : form.monitoramento_processo_origem === false ? "outro" : ""}
+                          onValueChange={(v) => setForm({ ...form, monitoramento_processo_origem: v === "origem" })}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="origem">No processo de origem ({numeroProcessoOrigem})</SelectItem>
+                            <SelectItem value="outro">Em outro processo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      {form.monitoramento_processo_origem === false && (
+                        <Field label="Número do Outro Processo *">
+                          <Input value={form.monitoramento_numero_processo ?? ""} onChange={(e) => setForm({ ...form, monitoramento_numero_processo: maskProcesso(e.target.value) })} placeholder="000000/0000" />
+                        </Field>
+                      )}
+                    </>
+                  )}
+                  <Field label="Data de Verificação">
+                    <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} />
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="Resposta do Gestor">
+                      <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} />
+                    </Field>
+                  </div>
+                  <div className="col-span-2">
+                    <Field label="Resultado do Monitoramento">
+                      <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} />
+                    </Field>
+                  </div>
+                  <div className="col-span-2">
+                    <Field label="Evidências">
+                      <div className="space-y-2">
+                        <Input type="file" multiple disabled={uploading} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
+                        {(form.anexos ?? []).length > 0 && (
+                          <ul className="text-xs space-y-1">
+                            {(form.anexos ?? []).map((a: any) => (
+                              <li key={a.path} className="flex items-center justify-between bg-background border border-border rounded px-2 py-1">
+                                <button type="button" className="truncate text-left hover:underline flex-1" onClick={() => downloadAnexo(a.path)}>{a.nome}</button>
+                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAnexo(a.path)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </Field>
+                  </div>
+                </div>
+              </div>
+
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
                 <Button onClick={submit}>{editing ? "Salvar" : "Adicionar"}</Button>

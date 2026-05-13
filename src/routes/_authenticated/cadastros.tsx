@@ -30,6 +30,7 @@ function CadastrosPage() {
         <TabsTrigger value="tipos_decisao">Tipos de Decisão</TabsTrigger>
         <TabsTrigger value="tipos_julgamento">Tipos de Julgamento</TabsTrigger>
         <TabsTrigger value="tipos_deliberacao">Tipos de Deliberação</TabsTrigger>
+        <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
         <TabsTrigger value="fontes">Fontes Externas (API)</TabsTrigger>
       </TabsList>
       <TabsContent value="unidades"><UnidadesGestoras /></TabsContent>
@@ -37,6 +38,7 @@ function CadastrosPage() {
       <TabsContent value="tipos_decisao"><SimpleCrud table="tipos_decisao" label="Tipo de Decisão" /></TabsContent>
       <TabsContent value="tipos_julgamento"><SimpleCrud table="tipos_julgamento" label="Tipo de Julgamento" /></TabsContent>
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
+      <TabsContent value="unidades_tecnicas"><UnidadesTecnicas /></TabsContent>
       <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
   );
@@ -419,6 +421,82 @@ function FontesDados() {
                       <Button variant="ghost" size="icon" onClick={() => remove(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
                   )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UnidadesTecnicas() {
+  const qc = useQueryClient();
+  const { hasAnyRole } = useAuth();
+  const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const emptyForm = { nome: "", sigla: "", ativo: true };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const { data } = useQuery({
+    queryKey: ["unidades_tecnicas"],
+    queryFn: async () => (await (supabase as any).from("unidades_tecnicas").select("*").order("nome")).data ?? [],
+  });
+
+  const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (u: any) => { setEditing(u); setForm(u); setOpen(true); };
+
+  const save = async () => {
+    if (!form.nome?.trim()) { toast.error("Nome obrigatório."); return; }
+    const payload = { nome: form.nome.trim(), sigla: form.sigla?.trim() || null, ativo: form.ativo };
+    const { error } = editing
+      ? await (supabase as any).from("unidades_tecnicas").update(payload).eq("id", editing.id)
+      : await (supabase as any).from("unidades_tecnicas").insert(payload);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Salvo.");
+    setOpen(false); setEditing(null); setForm(emptyForm);
+    qc.invalidateQueries({ queryKey: ["unidades_tecnicas"] });
+  };
+
+  const toggle = async (u: any) => {
+    await (supabase as any).from("unidades_tecnicas").update({ ativo: !u.ativo }).eq("id", u.id);
+    qc.invalidateQueries({ queryKey: ["unidades_tecnicas"] });
+  };
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-4 space-y-3">
+        <p className="text-xs text-muted-foreground">Unidades técnicas responsáveis pela execução do monitoramento das deliberações.</p>
+        {canEdit && (
+          <div className="flex justify-end">
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+              <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Unidade Técnica</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>{editing ? "Editar" : "Nova"} Unidade Técnica</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+                  <div><Label>Sigla</Label><Input value={form.sigla ?? ""} onChange={(e) => setForm({ ...form, sigla: e.target.value })} /></div>
+                  <div className="flex items-center gap-2"><Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} /><Label>Ativa</Label></div>
+                </div>
+                <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+        <Table>
+          <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Sigla</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {(data ?? []).map((u: any) => (
+              <TableRow key={u.id}>
+                <TableCell className="font-medium">{u.nome}</TableCell>
+                <TableCell>{u.sigla ?? "—"}</TableCell>
+                <TableCell>
+                  {canEdit ? <Switch checked={u.ativo} onCheckedChange={() => toggle(u)} /> : <Badge variant={u.ativo ? "default" : "outline"}>{u.ativo ? "Ativa" : "Inativa"}</Badge>}
+                </TableCell>
+                <TableCell>
+                  {canEdit && <Button variant="ghost" size="icon" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>}
                 </TableCell>
               </TableRow>
             ))}
