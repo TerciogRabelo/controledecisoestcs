@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Plus, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { maskProcesso, maskCpfCnpj, formatDate } from "@/lib/masks";
 import { useAuth } from "@/lib/auth-context";
@@ -19,6 +19,16 @@ import { useAuth } from "@/lib/auth-context";
 export const Route = createFileRoute("/_authenticated/registros/$id")({
   component: RegistroFormPage,
 });
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
+const STATUS_LABELS: Record<string, string> = {
+  em_monitoramento: "Em monitoramento",
+  cumprida: "Cumprida",
+  descumprida: "Descumprida",
+  vencida: "Vencida",
+  cancelada: "Cancelada",
+};
 
 type RD = {
   numero_processo: string;
@@ -90,7 +100,7 @@ function RegistroFormPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deliberacoes")
-        .select("*, tipos_deliberacao(descricao, cor)")
+        .select("*, tipos_deliberacao(descricao, cor, gera_prazo, permite_valor, permite_unidade_medida)")
         .eq("registro_decisao_id", registroId!)
         .order("criado_em", { ascending: false });
       if (error) throw error;
@@ -116,11 +126,19 @@ function RegistroFormPage() {
     }
   }, [registro]);
 
+  const validateDates = (): string | null => {
+    if (form.data_decisao && form.data_decisao > TODAY) return "Data da decisão não pode ser futura.";
+    if (form.data_transito_julgado && form.data_transito_julgado > TODAY) return "Data de trânsito em julgado não pode ser futura.";
+    return null;
+  };
+
   const save = async () => {
     if (!form.numero_processo || form.numero_processo.length < 11) {
       toast.error("Informe o número do processo no formato 000000/0000.");
       return;
     }
+    const dateErr = validateDates();
+    if (dateErr) { toast.error(dateErr); return; }
     setSaving(true);
     try {
       const payload = { ...form, atualizado_por: user?.id };
@@ -194,7 +212,7 @@ function RegistroFormPage() {
             <Input value={form.numero_decisao} onChange={(e) => set("numero_decisao", e.target.value)} disabled={!canEdit} />
           </Field>
           <Field label="Data da Decisão">
-            <Input type="date" value={form.data_decisao} onChange={(e) => set("data_decisao", e.target.value)} disabled={!canEdit} />
+            <Input type="date" max={TODAY} value={form.data_decisao} onChange={(e) => set("data_decisao", e.target.value)} disabled={!canEdit} />
           </Field>
           <Field label="Tipo de Julgamento">
             <SelectField value={form.tipo_julgamento_id} onChange={(v) => set("tipo_julgamento_id", v)} options={lookups?.tiposJulg.map((o) => ({ value: o.id, label: o.descricao })) ?? []} disabled={!canEdit} />
@@ -212,7 +230,7 @@ function RegistroFormPage() {
             <Input value={form.cpf_cnpj} onChange={(e) => set("cpf_cnpj", maskCpfCnpj(e.target.value))} disabled={!canEdit} />
           </Field>
           <Field label="Data de Trânsito em Julgado">
-            <Input type="date" value={form.data_transito_julgado} onChange={(e) => set("data_transito_julgado", e.target.value)} disabled={!canEdit} />
+            <Input type="date" max={TODAY} value={form.data_transito_julgado} onChange={(e) => set("data_transito_julgado", e.target.value)} disabled={!canEdit} />
           </Field>
         </CardContent>
       </Card>
@@ -257,6 +275,23 @@ function SelectField({ value, onChange, options, disabled }: { value: string | n
   );
 }
 
+function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" | "muted" } {
+  if (!d.tipos_deliberacao?.gera_prazo || !d.prazo_dias || !d.data_inicio_prazo) {
+    return { label: "—", tone: "muted" };
+  }
+  if (d.status_monitoramento === "cumprida" || d.status_monitoramento === "cancelada") {
+    return { label: `${d.prazo_dias}d`, tone: "muted" };
+  }
+  const inicio = new Date(d.data_inicio_prazo + "T00:00:00");
+  const fim = new Date(inicio);
+  fim.setDate(fim.getDate() + Number(d.prazo_dias));
+  const hoje = new Date(TODAY + "T00:00:00");
+  const diff = Math.ceil((fim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return { label: `Vencida há ${-diff}d`, tone: "danger" };
+  if (diff <= 7) return { label: `${diff}d restantes`, tone: "warn" };
+  return { label: `${diff}d restantes`, tone: "ok" };
+}
+
 function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }: {
   registroId: string;
   tipos: any[];
@@ -265,19 +300,56 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
   canEdit: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({ status_monitoramento: "em_monitoramento", deliberacao_solidaria: false });
+  const [editing, setEditing] = useState<any>(null);
+  const emptyForm = { status_monitoramento: "em_monitoramento", deliberacao_solidaria: false };
+  const [form, setForm] = useState<any>(emptyForm);
   const { user } = useAuth();
 
   const tipoSel = tipos.find((t) => t.id === form.tipo_deliberacao_id);
 
+  const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (d: any) => {
+    setEditing(d);
+    setForm({
+      tipo_deliberacao_id: d.tipo_deliberacao_id,
+      status_monitoramento: d.status_monitoramento,
+      deliberacao_solidaria: d.deliberacao_solidaria,
+      descricao: d.descricao,
+      observacao: d.observacao,
+      prazo_dias: d.prazo_dias,
+      data_inicio_prazo: d.data_inicio_prazo,
+      valor: d.valor,
+      unidade_medida: d.unidade_medida,
+      resposta_gestor: d.resposta_gestor,
+      resultado_monitoramento: d.resultado_monitoramento,
+      data_verificacao: d.data_verificacao,
+    });
+    setOpen(true);
+  };
+
   const submit = async () => {
     if (!form.tipo_deliberacao_id) { toast.error("Selecione o tipo de deliberação."); return; }
-    const payload = { ...form, registro_decisao_id: registroId, criado_por: user?.id, atualizado_por: user?.id };
-    const { error } = await supabase.from("deliberacoes").insert(payload);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Deliberação adicionada.");
-    setOpen(false);
-    setForm({ status_monitoramento: "em_monitoramento", deliberacao_solidaria: false });
+    if (tipoSel?.gera_prazo) {
+      if (!form.data_inicio_prazo) { toast.error("Informe a data de início do prazo."); return; }
+      if (!form.prazo_dias) { toast.error("Informe o prazo em dias."); return; }
+    }
+    if (form.data_inicio_prazo && form.data_inicio_prazo > TODAY) { toast.error("Data de início do prazo não pode ser futura."); return; }
+    if (form.data_verificacao && form.data_verificacao > TODAY) { toast.error("Data de verificação não pode ser futura."); return; }
+
+    if (editing) {
+      const { error } = await supabase
+        .from("deliberacoes")
+        .update({ ...form, atualizado_por: user?.id })
+        .eq("id", editing.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Deliberação atualizada.");
+    } else {
+      const payload = { ...form, registro_decisao_id: registroId, criado_por: user?.id, atualizado_por: user?.id };
+      const { error } = await supabase.from("deliberacoes").insert(payload);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Deliberação adicionada.");
+    }
+    setOpen(false); setEditing(null); setForm(emptyForm);
     onChange();
   };
 
@@ -294,10 +366,10 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm">Deliberações ({deliberacoes.length})</CardTitle>
         {canEdit && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4" /> Nova</Button></DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>Nova Deliberação</DialogTitle></DialogHeader>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+            <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova</Button></DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>{editing ? "Editar Deliberação" : "Nova Deliberação"}</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Tipo de Deliberação *">
                   <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} />
@@ -306,11 +378,9 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
                   <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="em_monitoramento">Em monitoramento</SelectItem>
-                      <SelectItem value="cumprida">Cumprida</SelectItem>
-                      <SelectItem value="descumprida">Descumprida</SelectItem>
-                      <SelectItem value="vencida">Vencida</SelectItem>
-                      <SelectItem value="cancelada">Cancelada</SelectItem>
+                      {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
@@ -320,9 +390,14 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
                   </Field>
                 </div>
                 {tipoSel?.gera_prazo && (
-                  <Field label="Prazo (dias)">
-                    <Input type="number" value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} />
-                  </Field>
+                  <>
+                    <Field label="Data de Início do Prazo *">
+                      <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} />
+                    </Field>
+                    <Field label="Prazo (dias) *">
+                      <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} />
+                    </Field>
+                  </>
                 )}
                 {tipoSel?.permite_valor && (
                   <Field label="Valor (R$)">
@@ -334,6 +409,19 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
                     <Input value={form.unidade_medida ?? ""} onChange={(e) => setForm({ ...form, unidade_medida: e.target.value })} />
                   </Field>
                 )}
+                <Field label="Data de Verificação">
+                  <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} />
+                </Field>
+                <div className="col-span-2">
+                  <Field label="Resposta do Gestor">
+                    <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} />
+                  </Field>
+                </div>
+                <div className="col-span-2">
+                  <Field label="Resultado do Monitoramento">
+                    <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} />
+                  </Field>
+                </div>
                 <div className="col-span-2">
                   <Field label="Observação">
                     <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} />
@@ -342,7 +430,7 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button onClick={submit}>Adicionar</Button>
+                <Button onClick={submit}>{editing ? "Salvar" : "Adicionar"}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -360,34 +448,51 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
                 <TableHead>Prazo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criada</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[90px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {deliberacoes.map((d) => (
-                <TableRow key={d.id}>
-                  <TableCell>
-                    <Badge style={{ backgroundColor: (d.tipos_deliberacao as any)?.cor, color: "white" }}>
-                      {(d.tipos_deliberacao as any)?.descricao}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm max-w-md truncate">{d.descricao ?? "—"}</TableCell>
-                  <TableCell className="text-sm">{d.prazo_dias ? `${d.prazo_dias}d` : "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant={d.status_monitoramento === "cumprida" ? "default" : d.status_monitoramento === "descumprida" || d.status_monitoramento === "vencida" ? "destructive" : "secondary"}>
-                      {d.status_monitoramento}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{formatDate(d.criado_em?.slice(0, 10))}</TableCell>
-                  <TableCell>
-                    {canEdit && (
-                      <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {deliberacoes.map((d) => {
+                const prazo = computePrazo(d);
+                return (
+                  <TableRow key={d.id}>
+                    <TableCell>
+                      <Badge style={{ backgroundColor: (d.tipos_deliberacao as any)?.cor, color: "white" }}>
+                        {(d.tipos_deliberacao as any)?.descricao}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm max-w-md truncate">{d.descricao ?? "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      <span className={
+                        prazo.tone === "danger" ? "text-destructive font-medium" :
+                        prazo.tone === "warn" ? "text-amber-600 font-medium" :
+                        prazo.tone === "ok" ? "text-emerald-600" :
+                        "text-muted-foreground"
+                      }>
+                        {prazo.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={d.status_monitoramento === "cumprida" ? "default" : d.status_monitoramento === "descumprida" || d.status_monitoramento === "vencida" ? "destructive" : "secondary"}>
+                        {STATUS_LABELS[d.status_monitoramento] ?? d.status_monitoramento}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">{formatDate(d.criado_em?.slice(0, 10))}</TableCell>
+                    <TableCell>
+                      {canEdit && (
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

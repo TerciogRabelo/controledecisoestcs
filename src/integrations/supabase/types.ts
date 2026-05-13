@@ -54,6 +54,7 @@ export type Database = {
           atualizado_por: string | null
           criado_em: string
           criado_por: string | null
+          data_inicio_prazo: string | null
           data_verificacao: string | null
           deliberacao_solidaria: boolean
           descricao: string | null
@@ -74,6 +75,7 @@ export type Database = {
           atualizado_por?: string | null
           criado_em?: string
           criado_por?: string | null
+          data_inicio_prazo?: string | null
           data_verificacao?: string | null
           deliberacao_solidaria?: boolean
           descricao?: string | null
@@ -94,6 +96,7 @@ export type Database = {
           atualizado_por?: string | null
           criado_em?: string
           criado_por?: string | null
+          data_inicio_prazo?: string | null
           data_verificacao?: string | null
           deliberacao_solidaria?: boolean
           descricao?: string | null

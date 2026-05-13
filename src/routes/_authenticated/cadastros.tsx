@@ -211,19 +211,32 @@ function TiposDeliberacao() {
   const { hasAnyRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({ cor: "#1e40af", icone: "gavel", gera_prazo: false, permite_valor: false, permite_unidade_medida: false, ativo: true });
+  const [editing, setEditing] = useState<any>(null);
+  const emptyForm = { cor: "#1e40af", icone: "gavel", gera_prazo: false, permite_valor: false, permite_unidade_medida: false, ativo: true };
+  const [form, setForm] = useState<any>(emptyForm);
 
   const { data } = useQuery({
     queryKey: ["tipos_deliberacao"],
     queryFn: async () => (await supabase.from("tipos_deliberacao").select("*").order("descricao")).data ?? [],
   });
 
+  const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (t: any) => { setEditing(t); setForm(t); setOpen(true); };
+
   const save = async () => {
-    const { error } = await supabase.from("tipos_deliberacao").insert(form);
+    if (!form.descricao?.trim()) { toast.error("Descrição obrigatória."); return; }
+    const { id: _ignored, ...payload } = form;
+    const { error } = editing
+      ? await supabase.from("tipos_deliberacao").update(payload).eq("id", editing.id)
+      : await supabase.from("tipos_deliberacao").insert(payload);
     if (error) { toast.error(error.message); return; }
-    toast.success("Adicionado.");
-    setOpen(false);
-    setForm({ cor: "#1e40af", icone: "gavel", gera_prazo: false, permite_valor: false, permite_unidade_medida: false, ativo: true });
+    toast.success("Salvo.");
+    setOpen(false); setEditing(null); setForm(emptyForm);
+    qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] });
+  };
+
+  const toggle = async (t: any) => {
+    await supabase.from("tipos_deliberacao").update({ ativo: !t.ativo }).eq("id", t.id);
     qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] });
   };
 
@@ -232,10 +245,10 @@ function TiposDeliberacao() {
       <CardContent className="p-4 space-y-3">
         {canEdit && (
           <div className="flex justify-end">
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4" /> Novo Tipo</Button></DialogTrigger>
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+              <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Tipo</Button></DialogTrigger>
               <DialogContent>
-                <DialogHeader><DialogTitle>Novo Tipo de Deliberação</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo"} Tipo de Deliberação</DialogTitle></DialogHeader>
                 <div className="space-y-3">
                   <div><Label>Descrição *</Label><Input value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
                   <div className="grid grid-cols-2 gap-3">
@@ -246,6 +259,7 @@ function TiposDeliberacao() {
                     <div className="flex items-center gap-2"><Switch checked={form.gera_prazo} onCheckedChange={(v) => setForm({ ...form, gera_prazo: v })} /><Label>Gera prazo</Label></div>
                     <div className="flex items-center gap-2"><Switch checked={form.permite_valor} onCheckedChange={(v) => setForm({ ...form, permite_valor: v })} /><Label>Permite valor</Label></div>
                     <div className="flex items-center gap-2"><Switch checked={form.permite_unidade_medida} onCheckedChange={(v) => setForm({ ...form, permite_unidade_medida: v })} /><Label>Permite unidade de medida</Label></div>
+                    <div className="flex items-center gap-2"><Switch checked={form.ativo ?? true} onCheckedChange={(v) => setForm({ ...form, ativo: v })} /><Label>Ativo</Label></div>
                   </div>
                 </div>
                 <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
@@ -254,7 +268,7 @@ function TiposDeliberacao() {
           </div>
         )}
         <Table>
-          <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead>Características</TableHead><TableHead>Cor</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead>Características</TableHead><TableHead>Cor</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
           <TableBody>
             {(data ?? []).map((t: any) => (
               <TableRow key={t.id}>
@@ -265,6 +279,20 @@ function TiposDeliberacao() {
                   {t.permite_unidade_medida && <Badge variant="outline">Unidade</Badge>}
                 </TableCell>
                 <TableCell><div className="h-5 w-5 rounded" style={{ backgroundColor: t.cor }} /></TableCell>
+                <TableCell>
+                  {canEdit ? (
+                    <Switch checked={t.ativo} onCheckedChange={() => toggle(t)} />
+                  ) : (
+                    <Badge variant={t.ativo ? "default" : "outline"}>{t.ativo ? "Ativo" : "Inativo"}</Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {canEdit && (
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
