@@ -12,12 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { maskCnpj } from "@/lib/masks";
-import { exportRows } from "@/lib/export";
+import { exportRows, parseImportFile } from "@/lib/export";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useRef } from "react";
 
 function ExportButton({ rows, filename }: { rows: any[]; filename: string }) {
   const disabled = !rows || rows.length === 0;
@@ -33,6 +34,44 @@ function ExportButton({ rows, filename }: { rows: any[]; filename: string }) {
         <DropdownMenuItem onClick={() => exportRows(rows, filename, "csv")}>CSV (.csv)</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function ImportButton({
+  table,
+  mapRow,
+  onDone,
+  hint,
+}: {
+  table: string;
+  mapRow: (row: any) => any | null;
+  onDone: () => void;
+  hint?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const handle = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const rows = await parseImportFile(file);
+      const payload = rows.map(mapRow).filter((x): x is any => x !== null);
+      if (payload.length === 0) { toast.error("Nenhuma linha válida encontrada."); return; }
+      const { error } = await (supabase as any).from(table).insert(payload);
+      if (error) { toast.error(error.message); return; }
+      toast.success(`${payload.length} registro(s) importado(s).`);
+      onDone();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Falha ao importar.");
+    }
+  };
+  return (
+    <>
+      <input ref={ref} type="file" accept=".xlsx,.csv" className="hidden" onChange={handle} />
+      <Button size="sm" variant="outline" onClick={() => ref.current?.click()} title={hint}>
+        <Upload className="h-4 w-4" /> Importar
+      </Button>
+    </>
   );
 }
 
