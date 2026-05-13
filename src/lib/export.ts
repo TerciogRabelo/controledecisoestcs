@@ -18,6 +18,13 @@ export function exportRows(rows: any[], filename: string, format: "xlsx" | "csv"
   }
 }
 
+export async function parseImportFile(file: File): Promise<any[]> {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, { defval: null });
+}
+
 function triggerDownload(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

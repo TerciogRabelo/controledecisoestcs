@@ -12,12 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { maskCnpj } from "@/lib/masks";
-import { exportRows } from "@/lib/export";
+import { exportRows, parseImportFile } from "@/lib/export";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useRef } from "react";
 
 function ExportButton({ rows, filename }: { rows: any[]; filename: string }) {
   const disabled = !rows || rows.length === 0;
@@ -36,6 +37,44 @@ function ExportButton({ rows, filename }: { rows: any[]; filename: string }) {
   );
 }
 
+function ImportButton({
+  table,
+  mapRow,
+  onDone,
+  hint,
+}: {
+  table: string;
+  mapRow: (row: any) => any | null;
+  onDone: () => void;
+  hint?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const handle = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const rows = await parseImportFile(file);
+      const payload = rows.map(mapRow).filter((x): x is any => x !== null);
+      if (payload.length === 0) { toast.error("Nenhuma linha válida encontrada."); return; }
+      const { error } = await (supabase as any).from(table).insert(payload);
+      if (error) { toast.error(error.message); return; }
+      toast.success(`${payload.length} registro(s) importado(s).`);
+      onDone();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Falha ao importar.");
+    }
+  };
+  return (
+    <>
+      <input ref={ref} type="file" accept=".xlsx,.csv" className="hidden" onChange={handle} />
+      <Button size="sm" variant="outline" onClick={() => ref.current?.click()} title={hint}>
+        <Upload className="h-4 w-4" /> Importar
+      </Button>
+    </>
+  );
+}
+
 export const Route = createFileRoute("/_authenticated/cadastros")({
   component: CadastrosPage,
 });
@@ -50,6 +89,7 @@ function CadastrosPage() {
         <TabsTrigger value="tipos_julgamento">Tipos de Julgamento</TabsTrigger>
         <TabsTrigger value="tipos_deliberacao">Tipos de Deliberação</TabsTrigger>
         <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
+        <TabsTrigger value="processos">Processos</TabsTrigger>
         <TabsTrigger value="fontes">Fontes Externas (API)</TabsTrigger>
       </TabsList>
       <TabsContent value="unidades"><UnidadesGestoras /></TabsContent>
@@ -58,6 +98,7 @@ function CadastrosPage() {
       <TabsContent value="tipos_julgamento"><SimpleCrud table="tipos_julgamento" label="Tipo de Julgamento" /></TabsContent>
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
       <TabsContent value="unidades_tecnicas"><UnidadesTecnicas /></TabsContent>
+      <TabsContent value="processos"><Processos /></TabsContent>
       <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
   );
@@ -91,6 +132,24 @@ function UnidadesGestoras() {
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename="unidades_gestoras" />
+          {canEdit && (
+            <ImportButton
+              table="unidades_gestoras"
+              onDone={() => qc.invalidateQueries({ queryKey: ["unidades_gestoras"] })}
+              hint="Colunas: nome_unidade, sigla, esfera, municipio, cnpj, status"
+              mapRow={(r) => {
+                if (!r.nome_unidade) return null;
+                return {
+                  nome_unidade: String(r.nome_unidade).trim(),
+                  sigla: r.sigla ? String(r.sigla).trim() : null,
+                  esfera: ["municipal", "estadual", "federal"].includes(String(r.esfera)) ? r.esfera : "municipal",
+                  municipio: r.municipio ? String(r.municipio).trim() : null,
+                  cnpj: r.cnpj ? String(r.cnpj).replace(/\D/g, "") : null,
+                  status: r.status === false || r.status === "false" || r.status === 0 ? false : true,
+                };
+              }}
+            />
+          )}
           {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEdit(null); }}>
               <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4" /> Nova Unidade</Button></DialogTrigger>
@@ -202,8 +261,16 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename={table} />
+          {canEdit && (
+            <ImportButton
+              table={table}
+              hint="Colunas: descricao, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: [table] })}
+              mapRow={(r) => r.descricao ? { descricao: String(r.descricao).trim(), ativo: r.ativo === false ? false : true } : null}
+            />
+          )}
         </div>
         {canEdit && (
           <div className="flex gap-2">
@@ -272,6 +339,26 @@ function TiposDeliberacao() {
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename="tipos_deliberacao" />
+          {canEdit && (
+            <ImportButton
+              table="tipos_deliberacao"
+              hint="Colunas: descricao, cor, icone, gera_prazo, permite_valor, permite_unidade_medida, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] })}
+              mapRow={(r) => {
+                if (!r.descricao) return null;
+                const b = (v: any, d = false) => v === undefined || v === null || v === "" ? d : (v === true || v === "true" || v === 1 || v === "1");
+                return {
+                  descricao: String(r.descricao).trim(),
+                  cor: r.cor ? String(r.cor) : "#1e40af",
+                  icone: r.icone ? String(r.icone) : "gavel",
+                  gera_prazo: b(r.gera_prazo),
+                  permite_valor: b(r.permite_valor),
+                  permite_unidade_medida: b(r.permite_unidade_medida),
+                  ativo: b(r.ativo, true),
+                };
+              }}
+            />
+          )}
           {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Tipo</Button></DialogTrigger>
@@ -399,6 +486,30 @@ function FontesDados() {
         <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename="fontes_dados" />
           {canEdit && (
+            <ImportButton
+              table="fontes_dados"
+              hint="Colunas: nome, tipo_alvo, url, headers (JSON), caminho_lista, campo_label, campo_valor, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: ["fontes_dados"] })}
+              mapRow={(r) => {
+                if (!r.nome || !r.url) return null;
+                let headers: any = {};
+                if (r.headers) {
+                  try { headers = typeof r.headers === "string" ? JSON.parse(r.headers) : r.headers; } catch { headers = {}; }
+                }
+                return {
+                  nome: String(r.nome).trim(),
+                  tipo_alvo: r.tipo_alvo ? String(r.tipo_alvo) : "processos",
+                  url: String(r.url).trim(),
+                  headers,
+                  caminho_lista: r.caminho_lista ? String(r.caminho_lista).trim() : null,
+                  campo_label: r.campo_label ? String(r.campo_label).trim() : "label",
+                  campo_valor: r.campo_valor ? String(r.campo_valor).trim() : "value",
+                  ativo: r.ativo === false ? false : true,
+                };
+              }}
+            />
+          )}
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Fonte</Button></DialogTrigger>
               <DialogContent className="max-w-2xl">
@@ -497,6 +608,14 @@ function UnidadesTecnicas() {
         <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename="unidades_tecnicas" />
           {canEdit && (
+            <ImportButton
+              table="unidades_tecnicas"
+              hint="Colunas: nome, sigla, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: ["unidades_tecnicas"] })}
+              mapRow={(r) => r.nome ? { nome: String(r.nome).trim(), sigla: r.sigla ? String(r.sigla).trim() : null, ativo: r.ativo === false ? false : true } : null}
+            />
+          )}
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Unidade Técnica</Button></DialogTrigger>
               <DialogContent>
@@ -523,6 +642,95 @@ function UnidadesTecnicas() {
                 </TableCell>
                 <TableCell>
                   {canEdit && <Button variant="ghost" size="icon" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Processos() {
+  const qc = useQueryClient();
+  const { hasAnyRole } = useAuth();
+  const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const emptyForm = { numero: "", descricao: "", ativo: true };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const { data } = useQuery({
+    queryKey: ["processos"],
+    queryFn: async () => (await (supabase as any).from("processos").select("*").order("numero")).data ?? [],
+  });
+
+  const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (p: any) => { setEditing(p); setForm(p); setOpen(true); };
+
+  const save = async () => {
+    if (!form.numero?.trim()) { toast.error("Número obrigatório."); return; }
+    const payload = { numero: form.numero.trim(), descricao: form.descricao?.trim() || null, ativo: form.ativo };
+    const { error } = editing
+      ? await (supabase as any).from("processos").update(payload).eq("id", editing.id)
+      : await (supabase as any).from("processos").insert(payload);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Salvo.");
+    setOpen(false); setEditing(null); setForm(emptyForm);
+    qc.invalidateQueries({ queryKey: ["processos"] });
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Excluir este processo?")) return;
+    await (supabase as any).from("processos").delete().eq("id", id);
+    qc.invalidateQueries({ queryKey: ["processos"] });
+  };
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-4 space-y-3">
+        <p className="text-xs text-muted-foreground">Cadastro básico de processos. Use Importar para carregar uma planilha (.xlsx/.csv) com as colunas <code className="bg-muted px-1 rounded">numero</code>, <code className="bg-muted px-1 rounded">descricao</code>, <code className="bg-muted px-1 rounded">ativo</code>.</p>
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="processos" />
+          {canEdit && (
+            <ImportButton
+              table="processos"
+              hint="Colunas: numero, descricao, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: ["processos"] })}
+              mapRow={(r) => r.numero ? { numero: String(r.numero).trim(), descricao: r.descricao ? String(r.descricao).trim() : null, ativo: r.ativo === false ? false : true } : null}
+            />
+          )}
+          {canEdit && (
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+              <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Processo</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo"} Processo</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div><Label>Número *</Label><Input value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} /></div>
+                  <div><Label>Descrição</Label><Input value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
+                  <div className="flex items-center gap-2"><Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} /><Label>Ativo</Label></div>
+                </div>
+                <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+        <Table>
+          <TableHeader><TableRow><TableHead>Número</TableHead><TableHead>Descrição</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[90px]"></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {(data ?? []).map((p: any) => (
+              <TableRow key={p.id}>
+                <TableCell className="font-mono">{p.numero}</TableCell>
+                <TableCell>{p.descricao ?? "—"}</TableCell>
+                <TableCell><Badge variant={p.ativo ? "default" : "outline"}>{p.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
+                <TableCell>
+                  {canEdit && (
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
