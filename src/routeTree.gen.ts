@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCadastrosRouteImport } from './routes/_authenticated/cadastros'
 import { Route as AuthenticatedRegistrosIndexRouteImport } from './routes/_authenticated/registros.index'
 import { Route as AuthenticatedRegistrosIdRouteImport } from './routes/_authenticated/registros.$id'
 
@@ -35,6 +36,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCadastrosRoute = AuthenticatedCadastrosRouteImport.update({
+  id: '/cadastros',
+  path: '/cadastros',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedRegistrosIndexRoute =
   AuthenticatedRegistrosIndexRouteImport.update({
     id: '/registros/',
@@ -51,6 +57,7 @@ const AuthenticatedRegistrosIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/cadastros': typeof AuthenticatedCadastrosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/registros/$id': typeof AuthenticatedRegistrosIdRoute
   '/registros/': typeof AuthenticatedRegistrosIndexRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/cadastros': typeof AuthenticatedCadastrosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/registros/$id': typeof AuthenticatedRegistrosIdRoute
   '/registros': typeof AuthenticatedRegistrosIndexRoute
@@ -67,20 +75,34 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/cadastros': typeof AuthenticatedCadastrosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/registros/$id': typeof AuthenticatedRegistrosIdRoute
   '/_authenticated/registros/': typeof AuthenticatedRegistrosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/registros/$id' | '/registros/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/cadastros'
+    | '/dashboard'
+    | '/registros/$id'
+    | '/registros/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/registros/$id' | '/registros'
+  to:
+    | '/'
+    | '/login'
+    | '/cadastros'
+    | '/dashboard'
+    | '/registros/$id'
+    | '/registros'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/cadastros'
     | '/_authenticated/dashboard'
     | '/_authenticated/registros/$id'
     | '/_authenticated/registros/'
@@ -122,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/cadastros': {
+      id: '/_authenticated/cadastros'
+      path: '/cadastros'
+      fullPath: '/cadastros'
+      preLoaderRoute: typeof AuthenticatedCadastrosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/registros/': {
       id: '/_authenticated/registros/'
       path: '/registros'
@@ -140,12 +169,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedCadastrosRoute: typeof AuthenticatedCadastrosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedRegistrosIdRoute: typeof AuthenticatedRegistrosIdRoute
   AuthenticatedRegistrosIndexRoute: typeof AuthenticatedRegistrosIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedCadastrosRoute: AuthenticatedCadastrosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedRegistrosIdRoute: AuthenticatedRegistrosIdRoute,
   AuthenticatedRegistrosIndexRoute: AuthenticatedRegistrosIndexRoute,
