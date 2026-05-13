@@ -261,8 +261,16 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename={table} />
+          {canEdit && (
+            <ImportButton
+              table={table}
+              hint="Colunas: descricao, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: [table] })}
+              mapRow={(r) => r.descricao ? { descricao: String(r.descricao).trim(), ativo: r.ativo === false ? false : true } : null}
+            />
+          )}
         </div>
         {canEdit && (
           <div className="flex gap-2">
