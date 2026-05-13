@@ -4,7 +4,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, FileStack, Building2, Settings, Users, ShieldCheck, LogOut } from "lucide-react";
+import { LayoutDashboard, FileStack, Building2, Users, ShieldCheck, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 
