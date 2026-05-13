@@ -12,10 +12,29 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { maskCnpj } from "@/lib/masks";
+import { exportRows } from "@/lib/export";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+function ExportButton({ rows, filename }: { rows: any[]; filename: string }) {
+  const disabled = !rows || rows.length === 0;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" variant="outline" disabled={disabled}>
+          <Download className="h-4 w-4" /> Exportar
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => exportRows(rows, filename, "xlsx")}>Excel (.xlsx)</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => exportRows(rows, filename, "csv")}>CSV (.csv)</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/cadastros")({
   component: CadastrosPage,
@@ -70,14 +89,15 @@ function UnidadesGestoras() {
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
-        {canEdit && (
-          <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="unidades_gestoras" />
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEdit(null); }}>
               <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4" /> Nova Unidade</Button></DialogTrigger>
               <UnidadeForm initial={edit} onSave={save} onCancel={() => { setOpen(false); setEdit(null); }} />
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -182,6 +202,9 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
+        <div className="flex justify-end">
+          <ExportButton rows={data ?? []} filename={table} />
+        </div>
         {canEdit && (
           <div className="flex gap-2">
             <Input placeholder={`Novo ${label}…`} value={novo} onChange={(e) => setNovo(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
@@ -247,8 +270,9 @@ function TiposDeliberacao() {
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
-        {canEdit && (
-          <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="tipos_deliberacao" />
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Tipo</Button></DialogTrigger>
               <DialogContent>
@@ -269,8 +293,8 @@ function TiposDeliberacao() {
                 <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
         <Table>
           <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead>Características</TableHead><TableHead>Cor</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
           <TableBody>
@@ -372,8 +396,9 @@ function FontesDados() {
         <p className="text-xs text-muted-foreground">
           Cadastre URLs de APIs que retornam JSON. Use <code className="bg-muted px-1 rounded">{"{query}"}</code> na URL para passar o termo de busca digitado pelo usuário (ex: número do processo). O sistema mapeia <strong>campo_label</strong> e <strong>campo_valor</strong> a partir de cada item retornado.
         </p>
-        {canEdit && (
-          <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="fontes_dados" />
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Fonte</Button></DialogTrigger>
               <DialogContent className="max-w-2xl">
@@ -403,8 +428,8 @@ function FontesDados() {
                 <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
         <Table>
           <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Popula</TableHead><TableHead>URL</TableHead><TableHead className="w-[80px]">Status</TableHead><TableHead className="w-[90px]"></TableHead></TableRow></TableHeader>
           <TableBody>
@@ -469,8 +494,9 @@ function UnidadesTecnicas() {
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
         <p className="text-xs text-muted-foreground">Unidades técnicas responsáveis pela execução do monitoramento das deliberações.</p>
-        {canEdit && (
-          <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="unidades_tecnicas" />
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Unidade Técnica</Button></DialogTrigger>
               <DialogContent>
@@ -483,8 +509,8 @@ function UnidadesTecnicas() {
                 <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
         <Table>
           <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Sigla</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
           <TableBody>
