@@ -22,7 +22,6 @@ export const Route = createFileRoute("/_authenticated/cadastros")({
 });
 
 function CadastrosPage() {
-  return (
     <Tabs defaultValue="unidades">
       <TabsList>
         <TabsTrigger value="unidades">Unidades Gestoras</TabsTrigger>
@@ -30,15 +29,15 @@ function CadastrosPage() {
         <TabsTrigger value="tipos_decisao">Tipos de Decisão</TabsTrigger>
         <TabsTrigger value="tipos_julgamento">Tipos de Julgamento</TabsTrigger>
         <TabsTrigger value="tipos_deliberacao">Tipos de Deliberação</TabsTrigger>
+        <TabsTrigger value="fontes">Fontes Externas (API)</TabsTrigger>
       </TabsList>
       <TabsContent value="unidades"><UnidadesGestoras /></TabsContent>
       <TabsContent value="orgaos"><SimpleCrud table="orgaos_julgadores" label="Órgão Julgador" /></TabsContent>
       <TabsContent value="tipos_decisao"><SimpleCrud table="tipos_decisao" label="Tipo de Decisão" /></TabsContent>
       <TabsContent value="tipos_julgamento"><SimpleCrud table="tipos_julgamento" label="Tipo de Julgamento" /></TabsContent>
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
+      <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
-  );
-}
 
 function UnidadesGestoras() {
   const qc = useQueryClient();
