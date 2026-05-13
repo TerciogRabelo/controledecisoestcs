@@ -39,7 +39,7 @@ function AvisosPage() {
       const { data } = await supabase
         .from("deliberacoes")
         .select("*, tipos_deliberacao(descricao, gera_prazo), registros_decisao(id, numero_processo)")
-        .in("status_monitoramento", ["em_monitoramento", "vencida"]);
+        .in("status_monitoramento", ["em_monitoramento", "vencido", "nao_cumprido", "parcialmente_cumprido"] as any);
       return data ?? [];
     },
   });
