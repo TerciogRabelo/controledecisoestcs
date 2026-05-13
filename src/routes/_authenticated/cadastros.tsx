@@ -340,6 +340,25 @@ function TiposDeliberacao() {
         <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename="tipos_deliberacao" />
           {canEdit && (
+            <ImportButton
+              table="tipos_deliberacao"
+              hint="Colunas: descricao, cor, icone, gera_prazo, permite_valor, permite_unidade_medida, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] })}
+              mapRow={(r) => {
+                if (!r.descricao) return null;
+                const b = (v: any, d = false) => v === undefined || v === null || v === "" ? d : (v === true || v === "true" || v === 1 || v === "1");
+                return {
+                  descricao: String(r.descricao).trim(),
+                  cor: r.cor ? String(r.cor) : "#1e40af",
+                  icone: r.icone ? String(r.icone) : "gavel",
+                  gera_prazo: b(r.gera_prazo),
+                  permite_valor: b(r.permite_valor),
+                  permite_unidade_medida: b(r.permite_unidade_medida),
+                  ativo: b(r.ativo, true),
+                };
+              }}
+            />
+          )}
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Tipo</Button></DialogTrigger>
               <DialogContent>
