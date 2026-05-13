@@ -8,6 +8,7 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   roles: AppRole[];
+  aprovado: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
@@ -23,15 +24,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [aprovado, setAprovado] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
 
   const loadRoles = async (uid: string | undefined) => {
     if (!uid) {
       setRoles([]);
+      setAprovado(false);
       return;
     }
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-    setRoles((data ?? []).map((r) => r.role as AppRole));
+    const [rolesRes, profRes] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", uid),
+      supabase.from("profiles").select("aprovado").eq("id", uid).maybeSingle(),
+    ]);
+    setRoles((rolesRes.data ?? []).map((r) => r.role as AppRole));
+    setAprovado(!!profRes.data?.aprovado);
   };
 
   useEffect(() => {
@@ -78,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, roles, loading, signIn, signUp, signOut, hasRole, hasAnyRole, refreshRoles }}
+      value={{ user, session, roles, aprovado, loading, signIn, signUp, signOut, hasRole, hasAnyRole, refreshRoles }}
     >
       {children}
     </AuthContext.Provider>
