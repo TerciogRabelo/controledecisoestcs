@@ -58,7 +58,7 @@ function RegistrosListPage() {
         </div>
         {canEdit && (
           <Button asChild>
-            <Link to="/registros/novo"><Plus className="h-4 w-4" /> Novo Registro</Link>
+            <Link to="/registros/$id" params={{ id: "novo" }}><Plus className="h-4 w-4" /> Novo Registro</Link>
           </Button>
         )}
       </div>
