@@ -16,7 +16,6 @@ const mainItems = [
 
 const adminItems = [
   { title: "Usuários", url: "/usuarios", icon: Users },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export function AppSidebar() {
