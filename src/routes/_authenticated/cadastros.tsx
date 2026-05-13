@@ -651,3 +651,92 @@ function UnidadesTecnicas() {
     </Card>
   );
 }
+
+function Processos() {
+  const qc = useQueryClient();
+  const { hasAnyRole } = useAuth();
+  const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const emptyForm = { numero: "", descricao: "", ativo: true };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const { data } = useQuery({
+    queryKey: ["processos"],
+    queryFn: async () => (await (supabase as any).from("processos").select("*").order("numero")).data ?? [],
+  });
+
+  const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (p: any) => { setEditing(p); setForm(p); setOpen(true); };
+
+  const save = async () => {
+    if (!form.numero?.trim()) { toast.error("Número obrigatório."); return; }
+    const payload = { numero: form.numero.trim(), descricao: form.descricao?.trim() || null, ativo: form.ativo };
+    const { error } = editing
+      ? await (supabase as any).from("processos").update(payload).eq("id", editing.id)
+      : await (supabase as any).from("processos").insert(payload);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Salvo.");
+    setOpen(false); setEditing(null); setForm(emptyForm);
+    qc.invalidateQueries({ queryKey: ["processos"] });
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Excluir este processo?")) return;
+    await (supabase as any).from("processos").delete().eq("id", id);
+    qc.invalidateQueries({ queryKey: ["processos"] });
+  };
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-4 space-y-3">
+        <p className="text-xs text-muted-foreground">Cadastro básico de processos. Use Importar para carregar uma planilha (.xlsx/.csv) com as colunas <code className="bg-muted px-1 rounded">numero</code>, <code className="bg-muted px-1 rounded">descricao</code>, <code className="bg-muted px-1 rounded">ativo</code>.</p>
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="processos" />
+          {canEdit && (
+            <ImportButton
+              table="processos"
+              hint="Colunas: numero, descricao, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: ["processos"] })}
+              mapRow={(r) => r.numero ? { numero: String(r.numero).trim(), descricao: r.descricao ? String(r.descricao).trim() : null, ativo: r.ativo === false ? false : true } : null}
+            />
+          )}
+          {canEdit && (
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+              <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Processo</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo"} Processo</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div><Label>Número *</Label><Input value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} /></div>
+                  <div><Label>Descrição</Label><Input value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
+                  <div className="flex items-center gap-2"><Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} /><Label>Ativo</Label></div>
+                </div>
+                <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+        <Table>
+          <TableHeader><TableRow><TableHead>Número</TableHead><TableHead>Descrição</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[90px]"></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {(data ?? []).map((p: any) => (
+              <TableRow key={p.id}>
+                <TableCell className="font-mono">{p.numero}</TableCell>
+                <TableCell>{p.descricao ?? "—"}</TableCell>
+                <TableCell><Badge variant={p.ativo ? "default" : "outline"}>{p.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
+                <TableCell>
+                  {canEdit && (
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
