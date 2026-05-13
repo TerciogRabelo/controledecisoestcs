@@ -89,14 +89,15 @@ function UnidadesGestoras() {
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
-        {canEdit && (
-          <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="unidades_gestoras" />
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEdit(null); }}>
               <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4" /> Nova Unidade</Button></DialogTrigger>
               <UnidadeForm initial={edit} onSave={save} onCancel={() => { setOpen(false); setEdit(null); }} />
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
