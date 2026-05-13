@@ -89,6 +89,7 @@ function CadastrosPage() {
         <TabsTrigger value="tipos_julgamento">Tipos de Julgamento</TabsTrigger>
         <TabsTrigger value="tipos_deliberacao">Tipos de Deliberação</TabsTrigger>
         <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
+        <TabsTrigger value="processos">Processos</TabsTrigger>
         <TabsTrigger value="fontes">Fontes Externas (API)</TabsTrigger>
       </TabsList>
       <TabsContent value="unidades"><UnidadesGestoras /></TabsContent>
@@ -97,6 +98,7 @@ function CadastrosPage() {
       <TabsContent value="tipos_julgamento"><SimpleCrud table="tipos_julgamento" label="Tipo de Julgamento" /></TabsContent>
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
       <TabsContent value="unidades_tecnicas"><UnidadesTecnicas /></TabsContent>
+      <TabsContent value="processos"><Processos /></TabsContent>
       <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
   );
