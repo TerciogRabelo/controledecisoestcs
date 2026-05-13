@@ -584,6 +584,14 @@ function UnidadesTecnicas() {
         <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename="unidades_tecnicas" />
           {canEdit && (
+            <ImportButton
+              table="unidades_tecnicas"
+              hint="Colunas: nome, sigla, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: ["unidades_tecnicas"] })}
+              mapRow={(r) => r.nome ? { nome: String(r.nome).trim(), sigla: r.sigla ? String(r.sigla).trim() : null, ativo: r.ativo === false ? false : true } : null}
+            />
+          )}
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Unidade Técnica</Button></DialogTrigger>
               <DialogContent>
