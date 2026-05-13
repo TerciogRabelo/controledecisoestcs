@@ -313,7 +313,9 @@ function RegistroFormPage() {
       {!isNew && registroId && (
         <DeliberacoesGrid
           registroId={registroId}
+          numeroProcessoOrigem={form.numero_processo}
           tipos={lookups?.tiposDel ?? []}
+          unidadesTec={lookups?.unidadesTec ?? []}
           deliberacoes={deliberacoes ?? []}
           onChange={refetchDel}
           canEdit={canEdit}
