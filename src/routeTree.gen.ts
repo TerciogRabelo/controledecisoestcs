@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedRegistrosIndexRouteImport } from './routes/_authenticated/registros.index'
+import { Route as AuthenticatedRegistrosIdRouteImport } from './routes/_authenticated/registros.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -40,17 +41,25 @@ const AuthenticatedRegistrosIndexRoute =
     path: '/registros/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedRegistrosIdRoute =
+  AuthenticatedRegistrosIdRouteImport.update({
+    id: '/registros/$id',
+    path: '/registros/$id',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/registros/$id': typeof AuthenticatedRegistrosIdRoute
   '/registros/': typeof AuthenticatedRegistrosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/registros/$id': typeof AuthenticatedRegistrosIdRoute
   '/registros': typeof AuthenticatedRegistrosIndexRoute
 }
 export interface FileRoutesById {
@@ -59,19 +68,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/registros/$id': typeof AuthenticatedRegistrosIdRoute
   '/_authenticated/registros/': typeof AuthenticatedRegistrosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/registros/'
+  fullPaths: '/' | '/login' | '/dashboard' | '/registros/$id' | '/registros/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/registros'
+  to: '/' | '/login' | '/dashboard' | '/registros/$id' | '/registros'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/dashboard'
+    | '/_authenticated/registros/$id'
     | '/_authenticated/registros/'
   fileRoutesById: FileRoutesById
 }
@@ -118,16 +129,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRegistrosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/registros/$id': {
+      id: '/_authenticated/registros/$id'
+      path: '/registros/$id'
+      fullPath: '/registros/$id'
+      preLoaderRoute: typeof AuthenticatedRegistrosIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedRegistrosIdRoute: typeof AuthenticatedRegistrosIdRoute
   AuthenticatedRegistrosIndexRoute: typeof AuthenticatedRegistrosIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedRegistrosIdRoute: AuthenticatedRegistrosIdRoute,
   AuthenticatedRegistrosIndexRoute: AuthenticatedRegistrosIndexRoute,
 }
 
