@@ -567,3 +567,45 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
     </Card>
   );
 }
+
+function CpfCnpjLookup({ value, onChange, onMatch, disabled, currentRegistroId }: { value: string; onChange: (v: string) => void; onMatch: (nome: string | null) => void; disabled?: boolean; currentRegistroId: string | null }) {
+  const [hint, setHint] = useState<string | null>(null);
+  const digits = value.replace(/\D/g, "");
+
+  useEffect(() => {
+    setHint(null);
+    if (digits.length !== 11 && digits.length !== 14) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      let q = supabase
+        .from("registros_decisao")
+        .select("id, gestor_responsavel, numero_processo")
+        .eq("cpf_cnpj", value)
+        .order("criado_em", { ascending: false })
+        .limit(1);
+      if (currentRegistroId) q = q.neq("id", currentRegistroId);
+      const { data } = await q;
+      if (cancelled) return;
+      if (data && data.length > 0) {
+        const r = data[0];
+        onMatch(r.gestor_responsavel ?? null);
+        setHint(`Cadastrado: ${r.gestor_responsavel ?? "(sem nome)"} — proc. ${r.numero_processo}`);
+      } else {
+        setHint("Novo CPF/CNPJ — será cadastrado.");
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [value, currentRegistroId]);
+
+  return (
+    <div className="space-y-1">
+      <Input
+        value={value}
+        onChange={(e) => onChange(maskCpfCnpj(e.target.value))}
+        placeholder="000.000.000-00 ou 00.000.000/0000-00"
+        disabled={disabled}
+      />
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
