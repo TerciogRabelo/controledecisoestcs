@@ -303,3 +303,128 @@ function TiposDeliberacao() {
     </Card>
   );
 }
+
+const TIPO_ALVO_LABELS: Record<string, string> = {
+  processos: "Processos",
+  unidades_gestoras: "Unidades Gestoras",
+  orgaos_julgadores: "Órgãos Julgadores",
+  tipos_decisao: "Tipos de Decisão",
+  tipos_julgamento: "Tipos de Julgamento",
+  tipos_deliberacao: "Tipos de Deliberação",
+};
+
+function FontesDados() {
+  const qc = useQueryClient();
+  const { hasAnyRole } = useAuth();
+  const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const emptyForm = { nome: "", tipo_alvo: "processos", url: "", headers: "{}", caminho_lista: "", campo_label: "label", campo_valor: "value", ativo: true };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const { data } = useQuery({
+    queryKey: ["fontes_dados"],
+    queryFn: async () => (await supabase.from("fontes_dados").select("*").order("nome")).data ?? [],
+  });
+
+  const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (f: any) => {
+    setEditing(f);
+    setForm({ ...f, headers: JSON.stringify(f.headers ?? {}, null, 2), caminho_lista: f.caminho_lista ?? "" });
+    setOpen(true);
+  };
+
+  const save = async () => {
+    if (!form.nome.trim() || !form.url.trim()) { toast.error("Nome e URL são obrigatórios."); return; }
+    let headers = {};
+    try { headers = form.headers?.trim() ? JSON.parse(form.headers) : {}; }
+    catch { toast.error("Cabeçalhos devem ser JSON válido."); return; }
+    const payload: any = {
+      nome: form.nome.trim(),
+      tipo_alvo: form.tipo_alvo,
+      url: form.url.trim(),
+      headers,
+      caminho_lista: form.caminho_lista?.trim() || null,
+      campo_label: form.campo_label.trim() || "label",
+      campo_valor: form.campo_valor.trim() || "value",
+      ativo: form.ativo,
+    };
+    const { error } = editing
+      ? await supabase.from("fontes_dados").update(payload).eq("id", editing.id)
+      : await supabase.from("fontes_dados").insert(payload);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Salvo.");
+    setOpen(false); setEditing(null); setForm(emptyForm);
+    qc.invalidateQueries({ queryKey: ["fontes_dados"] });
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Excluir esta fonte?")) return;
+    await supabase.from("fontes_dados").delete().eq("id", id);
+    qc.invalidateQueries({ queryKey: ["fontes_dados"] });
+  };
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-4 space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Cadastre URLs de APIs que retornam JSON. Use <code className="bg-muted px-1 rounded">{"{query}"}</code> na URL para passar o termo de busca digitado pelo usuário (ex: número do processo). O sistema mapeia <strong>campo_label</strong> e <strong>campo_valor</strong> a partir de cada item retornado.
+        </p>
+        {canEdit && (
+          <div className="flex justify-end">
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+              <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Fonte</Button></DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle>{editing ? "Editar" : "Nova"} Fonte de Dados</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+                    <div>
+                      <Label>Popula</Label>
+                      <Select value={form.tipo_alvo} onValueChange={(v) => setForm({ ...form, tipo_alvo: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(TIPO_ALVO_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div><Label>URL *</Label><Input placeholder="https://api.exemplo.gov.br/processos?q={query}" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} /></div>
+                  <div><Label>Cabeçalhos (JSON)</Label><Input placeholder='{"Authorization":"Bearer ..."}' value={form.headers} onChange={(e) => setForm({ ...form, headers: e.target.value })} /></div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label>Caminho da lista</Label><Input placeholder="data.items" value={form.caminho_lista} onChange={(e) => setForm({ ...form, caminho_lista: e.target.value })} /></div>
+                    <div><Label>Campo rótulo</Label><Input value={form.campo_label} onChange={(e) => setForm({ ...form, campo_label: e.target.value })} /></div>
+                    <div><Label>Campo valor</Label><Input value={form.campo_valor} onChange={(e) => setForm({ ...form, campo_valor: e.target.value })} /></div>
+                  </div>
+                  <div className="flex items-center gap-2"><Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} /><Label>Ativa</Label></div>
+                </div>
+                <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+        <Table>
+          <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Popula</TableHead><TableHead>URL</TableHead><TableHead className="w-[80px]">Status</TableHead><TableHead className="w-[90px]"></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {(data ?? []).map((f: any) => (
+              <TableRow key={f.id}>
+                <TableCell className="font-medium">{f.nome}</TableCell>
+                <TableCell><Badge variant="outline">{TIPO_ALVO_LABELS[f.tipo_alvo] ?? f.tipo_alvo}</Badge></TableCell>
+                <TableCell className="font-mono text-xs max-w-md truncate">{f.url}</TableCell>
+                <TableCell><Badge variant={f.ativo ? "default" : "outline"}>{f.ativo ? "Ativa" : "Inativa"}</Badge></TableCell>
+                <TableCell>
+                  {canEdit && (
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => remove(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
