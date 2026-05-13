@@ -494,8 +494,9 @@ function UnidadesTecnicas() {
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
         <p className="text-xs text-muted-foreground">Unidades técnicas responsáveis pela execução do monitoramento das deliberações.</p>
-        {canEdit && (
-          <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="unidades_tecnicas" />
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Unidade Técnica</Button></DialogTrigger>
               <DialogContent>
@@ -508,8 +509,8 @@ function UnidadesTecnicas() {
                 <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
         <Table>
           <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Sigla</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
           <TableBody>
