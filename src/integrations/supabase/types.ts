@@ -128,6 +128,48 @@ export type Database = {
           },
         ]
       }
+      fontes_dados: {
+        Row: {
+          ativo: boolean
+          caminho_lista: string | null
+          campo_label: string
+          campo_valor: string
+          created_at: string
+          headers: Json
+          id: string
+          nome: string
+          tipo_alvo: Database["public"]["Enums"]["fonte_tipo_alvo"]
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          ativo?: boolean
+          caminho_lista?: string | null
+          campo_label?: string
+          campo_valor?: string
+          created_at?: string
+          headers?: Json
+          id?: string
+          nome: string
+          tipo_alvo: Database["public"]["Enums"]["fonte_tipo_alvo"]
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          ativo?: boolean
+          caminho_lista?: string | null
+          campo_label?: string
+          campo_valor?: string
+          created_at?: string
+          headers?: Json
+          id?: string
+          nome?: string
+          tipo_alvo?: Database["public"]["Enums"]["fonte_tipo_alvo"]
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       orgaos_julgadores: {
         Row: {
           ativo: boolean
@@ -452,6 +494,13 @@ export type Database = {
     Enums: {
       app_role: "admin" | "secretaria" | "monitoramento" | "consulta"
       esfera_unidade: "estadual" | "municipal" | "federal" | "outra"
+      fonte_tipo_alvo:
+        | "processos"
+        | "unidades_gestoras"
+        | "orgaos_julgadores"
+        | "tipos_decisao"
+        | "tipos_julgamento"
+        | "tipos_deliberacao"
       status_monitoramento:
         | "em_monitoramento"
         | "cumprido"
@@ -588,6 +637,14 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "secretaria", "monitoramento", "consulta"],
       esfera_unidade: ["estadual", "municipal", "federal", "outra"],
+      fonte_tipo_alvo: [
+        "processos",
+        "unidades_gestoras",
+        "orgaos_julgadores",
+        "tipos_decisao",
+        "tipos_julgamento",
+        "tipos_deliberacao",
+      ],
       status_monitoramento: [
         "em_monitoramento",
         "cumprido",
