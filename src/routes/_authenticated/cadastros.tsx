@@ -293,8 +293,8 @@ function TiposDeliberacao() {
                 <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
         <Table>
           <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead>Características</TableHead><TableHead>Cor</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
           <TableBody>
