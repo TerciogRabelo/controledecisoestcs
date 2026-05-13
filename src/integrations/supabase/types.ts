@@ -14,16 +14,448 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_log: {
+        Row: {
+          acao: string
+          criado_em: string
+          id: string
+          registro_id: string | null
+          tabela: string
+          usuario_id: string | null
+          valor_anterior: Json | null
+          valor_novo: Json | null
+        }
+        Insert: {
+          acao: string
+          criado_em?: string
+          id?: string
+          registro_id?: string | null
+          tabela: string
+          usuario_id?: string | null
+          valor_anterior?: Json | null
+          valor_novo?: Json | null
+        }
+        Update: {
+          acao?: string
+          criado_em?: string
+          id?: string
+          registro_id?: string | null
+          tabela?: string
+          usuario_id?: string | null
+          valor_anterior?: Json | null
+          valor_novo?: Json | null
+        }
+        Relationships: []
+      }
+      deliberacoes: {
+        Row: {
+          anexos: Json
+          atualizado_em: string
+          atualizado_por: string | null
+          criado_em: string
+          criado_por: string | null
+          data_verificacao: string | null
+          deliberacao_solidaria: boolean
+          descricao: string | null
+          id: string
+          observacao: string | null
+          prazo_dias: number | null
+          registro_decisao_id: string
+          resposta_gestor: string | null
+          resultado_monitoramento: string | null
+          status_monitoramento: Database["public"]["Enums"]["status_monitoramento"]
+          tipo_deliberacao_id: string | null
+          unidade_medida: string | null
+          valor: number | null
+        }
+        Insert: {
+          anexos?: Json
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data_verificacao?: string | null
+          deliberacao_solidaria?: boolean
+          descricao?: string | null
+          id?: string
+          observacao?: string | null
+          prazo_dias?: number | null
+          registro_decisao_id: string
+          resposta_gestor?: string | null
+          resultado_monitoramento?: string | null
+          status_monitoramento?: Database["public"]["Enums"]["status_monitoramento"]
+          tipo_deliberacao_id?: string | null
+          unidade_medida?: string | null
+          valor?: number | null
+        }
+        Update: {
+          anexos?: Json
+          atualizado_em?: string
+          atualizado_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data_verificacao?: string | null
+          deliberacao_solidaria?: boolean
+          descricao?: string | null
+          id?: string
+          observacao?: string | null
+          prazo_dias?: number | null
+          registro_decisao_id?: string
+          resposta_gestor?: string | null
+          resultado_monitoramento?: string | null
+          status_monitoramento?: Database["public"]["Enums"]["status_monitoramento"]
+          tipo_deliberacao_id?: string | null
+          unidade_medida?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliberacoes_registro_decisao_id_fkey"
+            columns: ["registro_decisao_id"]
+            isOneToOne: false
+            referencedRelation: "registros_decisao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliberacoes_tipo_deliberacao_id_fkey"
+            columns: ["tipo_deliberacao_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_deliberacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orgaos_julgadores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string
+          id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao: string
+          id?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      processos_relacionados: {
+        Row: {
+          created_at: string
+          id: string
+          numero_processo_relacionado: string
+          observacao: string | null
+          registro_decisao_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          numero_processo_relacionado: string
+          observacao?: string | null
+          registro_decisao_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          numero_processo_relacionado?: string
+          observacao?: string | null
+          registro_decisao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processos_relacionados_registro_decisao_id_fkey"
+            columns: ["registro_decisao_id"]
+            isOneToOne: false
+            referencedRelation: "registros_decisao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registros_decisao: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          cpf_cnpj: string | null
+          criado_em: string
+          criado_por: string | null
+          data_decisao: string | null
+          data_transito_julgado: string | null
+          gestor_responsavel: string | null
+          houve_deliberacao: boolean
+          id: string
+          numero_decisao: string | null
+          numero_processo: string
+          observacoes: string | null
+          orgao_julgador_id: string | null
+          quantidade_deliberacoes: number
+          status_registro: Database["public"]["Enums"]["status_registro"]
+          tipo_decisao_id: string | null
+          tipo_julgamento_id: string | null
+          unidade_gestora_id: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cpf_cnpj?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data_decisao?: string | null
+          data_transito_julgado?: string | null
+          gestor_responsavel?: string | null
+          houve_deliberacao?: boolean
+          id?: string
+          numero_decisao?: string | null
+          numero_processo: string
+          observacoes?: string | null
+          orgao_julgador_id?: string | null
+          quantidade_deliberacoes?: number
+          status_registro?: Database["public"]["Enums"]["status_registro"]
+          tipo_decisao_id?: string | null
+          tipo_julgamento_id?: string | null
+          unidade_gestora_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          cpf_cnpj?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data_decisao?: string | null
+          data_transito_julgado?: string | null
+          gestor_responsavel?: string | null
+          houve_deliberacao?: boolean
+          id?: string
+          numero_decisao?: string | null
+          numero_processo?: string
+          observacoes?: string | null
+          orgao_julgador_id?: string | null
+          quantidade_deliberacoes?: number
+          status_registro?: Database["public"]["Enums"]["status_registro"]
+          tipo_decisao_id?: string | null
+          tipo_julgamento_id?: string | null
+          unidade_gestora_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registros_decisao_orgao_julgador_id_fkey"
+            columns: ["orgao_julgador_id"]
+            isOneToOne: false
+            referencedRelation: "orgaos_julgadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_decisao_tipo_decisao_id_fkey"
+            columns: ["tipo_decisao_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_decisao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_decisao_tipo_julgamento_id_fkey"
+            columns: ["tipo_julgamento_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_julgamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registros_decisao_unidade_gestora_id_fkey"
+            columns: ["unidade_gestora_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_gestoras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tipos_decisao: {
+        Row: {
+          ativo: boolean
+          descricao: string
+          id: string
+        }
+        Insert: {
+          ativo?: boolean
+          descricao: string
+          id?: string
+        }
+        Update: {
+          ativo?: boolean
+          descricao?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      tipos_deliberacao: {
+        Row: {
+          ativo: boolean
+          cor: string
+          descricao: string
+          gera_prazo: boolean
+          icone: string
+          id: string
+          permite_unidade_medida: boolean
+          permite_valor: boolean
+        }
+        Insert: {
+          ativo?: boolean
+          cor?: string
+          descricao: string
+          gera_prazo?: boolean
+          icone?: string
+          id?: string
+          permite_unidade_medida?: boolean
+          permite_valor?: boolean
+        }
+        Update: {
+          ativo?: boolean
+          cor?: string
+          descricao?: string
+          gera_prazo?: boolean
+          icone?: string
+          id?: string
+          permite_unidade_medida?: boolean
+          permite_valor?: boolean
+        }
+        Relationships: []
+      }
+      tipos_julgamento: {
+        Row: {
+          ativo: boolean
+          descricao: string
+          id: string
+        }
+        Insert: {
+          ativo?: boolean
+          descricao: string
+          id?: string
+        }
+        Update: {
+          ativo?: boolean
+          descricao?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      unidades_gestoras: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          esfera: Database["public"]["Enums"]["esfera_unidade"]
+          id: string
+          municipio: string | null
+          nome_unidade: string
+          sigla: string | null
+          status: boolean
+          updated_at: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          esfera?: Database["public"]["Enums"]["esfera_unidade"]
+          id?: string
+          municipio?: string | null
+          nome_unidade: string
+          sigla?: string | null
+          status?: boolean
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          esfera?: Database["public"]["Enums"]["esfera_unidade"]
+          id?: string
+          municipio?: string | null
+          nome_unidade?: string
+          sigla?: string | null
+          status?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "secretaria" | "monitoramento" | "consulta"
+      esfera_unidade: "estadual" | "municipal" | "federal" | "outra"
+      status_monitoramento:
+        | "em_monitoramento"
+        | "cumprido"
+        | "nao_cumprido"
+        | "parcialmente_cumprido"
+        | "vencido"
+      status_registro: "rascunho" | "ativo" | "arquivado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +582,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "secretaria", "monitoramento", "consulta"],
+      esfera_unidade: ["estadual", "municipal", "federal", "outra"],
+      status_monitoramento: [
+        "em_monitoramento",
+        "cumprido",
+        "nao_cumprido",
+        "parcialmente_cumprido",
+        "vencido",
+      ],
+      status_registro: ["rascunho", "ativo", "arquivado"],
+    },
   },
 } as const
