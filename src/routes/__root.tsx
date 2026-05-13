@@ -79,10 +79,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Plataforma institucional do Tribunal de Contas do Estado do Piauí para gestão de decisões, deliberações e monitoramento." },
       { name: "author", content: "TCE-PI" },
       { property: "og:title", content: "TCE-PI · Gestão de Decisões" },
-      { property: "og:description", content: "Plataforma institucional para gestão e monitoramento de decisões do TCE-PI." },
+      { property: "og:description", content: "Plataforma institucional do Tribunal de Contas do Estado do Piauí para gestão de decisões, deliberações e monitoramento." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "TCE-PI · Gestão de Decisões" },
+      { name: "twitter:description", content: "Plataforma institucional do Tribunal de Contas do Estado do Piauí para gestão de decisões, deliberações e monitoramento." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/049a46b9-7eed-4e63-b391-279c980da48b/id-preview-a4365898--793beaab-e83a-4472-bb41-944f178f5d0b.lovable.app-1778693833188.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/049a46b9-7eed-4e63-b391-279c980da48b/id-preview-a4365898--793beaab-e83a-4472-bb41-944f178f5d0b.lovable.app-1778693833188.png" },
     ],
     links: [
       {
