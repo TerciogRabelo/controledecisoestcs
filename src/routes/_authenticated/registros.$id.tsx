@@ -193,7 +193,7 @@ function RegistroFormPage() {
         <CardHeader><CardTitle className="text-sm">1. Identificação do Processo</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Field label="Número do Processo *">
-            <Input value={form.numero_processo} onChange={(e) => set("numero_processo", maskProcesso(e.target.value))} placeholder="000000/0000" disabled={!canEdit} />
+            <ProcessoInput value={form.numero_processo} onChange={(v) => set("numero_processo", v)} disabled={!canEdit} />
           </Field>
           <Field label="Órgão Julgador">
             <SelectField value={form.orgao_julgador_id} onChange={(v) => set("orgao_julgador_id", v)} options={lookups?.orgaos.map((o) => ({ value: o.id, label: o.descricao })) ?? []} disabled={!canEdit} />
