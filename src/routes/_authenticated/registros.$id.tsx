@@ -1,0 +1,397 @@
+import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Save, Plus, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { maskProcesso, maskCpfCnpj, formatDate } from "@/lib/masks";
+import { useAuth } from "@/lib/auth-context";
+
+export const Route = createFileRoute("/_authenticated/registros/$id")({
+  component: RegistroFormPage,
+});
+
+type RD = {
+  numero_processo: string;
+  numero_decisao: string;
+  data_decisao: string;
+  data_transito_julgado: string;
+  gestor_responsavel: string;
+  cpf_cnpj: string;
+  observacoes: string;
+  unidade_gestora_id: string | null;
+  orgao_julgador_id: string | null;
+  tipo_decisao_id: string | null;
+  tipo_julgamento_id: string | null;
+};
+
+const empty: RD = {
+  numero_processo: "",
+  numero_decisao: "",
+  data_decisao: "",
+  data_transito_julgado: "",
+  gestor_responsavel: "",
+  cpf_cnpj: "",
+  observacoes: "",
+  unidade_gestora_id: null,
+  orgao_julgador_id: null,
+  tipo_decisao_id: null,
+  tipo_julgamento_id: null,
+};
+
+function RegistroFormPage() {
+  const { id } = useParams({ from: "/_authenticated/registros/$id" });
+  const isNew = id === "novo";
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { hasAnyRole, user } = useAuth();
+  const canEdit = hasAnyRole(["admin", "secretaria"]);
+
+  const [form, setForm] = useState<RD>(empty);
+  const [saving, setSaving] = useState(false);
+  const [registroId, setRegistroId] = useState<string | null>(isNew ? null : id);
+
+  const { data: lookups } = useQuery({
+    queryKey: ["lookups"],
+    queryFn: async () => {
+      const [u, o, td, tj, tdel] = await Promise.all([
+        supabase.from("unidades_gestoras").select("id, nome_unidade, sigla").eq("status", true).order("nome_unidade"),
+        supabase.from("orgaos_julgadores").select("id, descricao").eq("ativo", true).order("descricao"),
+        supabase.from("tipos_decisao").select("id, descricao").eq("ativo", true).order("descricao"),
+        supabase.from("tipos_julgamento").select("id, descricao").eq("ativo", true).order("descricao"),
+        supabase.from("tipos_deliberacao").select("*").eq("ativo", true).order("descricao"),
+      ]);
+      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [] };
+    },
+  });
+
+  const { data: registro } = useQuery({
+    queryKey: ["registro", id],
+    enabled: !isNew,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("registros_decisao").select("*").eq("id", id).single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: deliberacoes, refetch: refetchDel } = useQuery({
+    queryKey: ["deliberacoes", registroId],
+    enabled: !!registroId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deliberacoes")
+        .select("*, tipos_deliberacao(descricao, cor)")
+        .eq("registro_decisao_id", registroId!)
+        .order("criado_em", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (registro) {
+      setForm({
+        numero_processo: registro.numero_processo ?? "",
+        numero_decisao: registro.numero_decisao ?? "",
+        data_decisao: registro.data_decisao ?? "",
+        data_transito_julgado: registro.data_transito_julgado ?? "",
+        gestor_responsavel: registro.gestor_responsavel ?? "",
+        cpf_cnpj: registro.cpf_cnpj ?? "",
+        observacoes: registro.observacoes ?? "",
+        unidade_gestora_id: registro.unidade_gestora_id,
+        orgao_julgador_id: registro.orgao_julgador_id,
+        tipo_decisao_id: registro.tipo_decisao_id,
+        tipo_julgamento_id: registro.tipo_julgamento_id,
+      });
+    }
+  }, [registro]);
+
+  const save = async () => {
+    if (!form.numero_processo || form.numero_processo.length < 11) {
+      toast.error("Informe o número do processo no formato 000000/0000.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = { ...form, atualizado_por: user?.id };
+      if (isNew) {
+        const { data, error } = await supabase
+          .from("registros_decisao")
+          .insert({ ...payload, criado_por: user?.id })
+          .select("id")
+          .single();
+        if (error) throw error;
+        toast.success("Registro criado.");
+        setRegistroId(data.id);
+        navigate({ to: "/registros/$id", params: { id: data.id } });
+      } else {
+        const { error } = await supabase.from("registros_decisao").update(payload).eq("id", id);
+        if (error) throw error;
+        toast.success("Registro atualizado.");
+      }
+      qc.invalidateQueries({ queryKey: ["registros"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const set = <K extends keyof RD>(k: K, v: RD[K]) => setForm((f) => ({ ...f, [k]: v }));
+
+  return (
+    <div className="space-y-6 max-w-6xl">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/registros"><ArrowLeft className="h-4 w-4" /></Link>
+          </Button>
+          <div>
+            <h2 className="text-lg font-semibold">{isNew ? "Novo Registro de Decisão" : `Processo ${form.numero_processo}`}</h2>
+            <p className="text-xs text-muted-foreground">Preencha os blocos e salve para habilitar deliberações.</p>
+          </div>
+        </div>
+        {canEdit && (
+          <Button onClick={save} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Salvar
+          </Button>
+        )}
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle className="text-sm">1. Identificação do Processo</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Field label="Número do Processo *">
+            <Input value={form.numero_processo} onChange={(e) => set("numero_processo", maskProcesso(e.target.value))} placeholder="000000/0000" disabled={!canEdit} />
+          </Field>
+          <Field label="Órgão Julgador">
+            <SelectField value={form.orgao_julgador_id} onChange={(v) => set("orgao_julgador_id", v)} options={lookups?.orgaos.map((o) => ({ value: o.id, label: o.descricao })) ?? []} disabled={!canEdit} />
+          </Field>
+          <Field label="Unidade Gestora">
+            <SelectField value={form.unidade_gestora_id} onChange={(v) => set("unidade_gestora_id", v)} options={lookups?.unidades.map((o) => ({ value: o.id, label: `${o.sigla ? o.sigla + " — " : ""}${o.nome_unidade}` })) ?? []} disabled={!canEdit} />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-sm">2. Decisão</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Field label="Tipo de Decisão">
+            <SelectField value={form.tipo_decisao_id} onChange={(v) => set("tipo_decisao_id", v)} options={lookups?.tiposDecisao.map((o) => ({ value: o.id, label: o.descricao })) ?? []} disabled={!canEdit} />
+          </Field>
+          <Field label="Número da Decisão">
+            <Input value={form.numero_decisao} onChange={(e) => set("numero_decisao", e.target.value)} disabled={!canEdit} />
+          </Field>
+          <Field label="Data da Decisão">
+            <Input type="date" value={form.data_decisao} onChange={(e) => set("data_decisao", e.target.value)} disabled={!canEdit} />
+          </Field>
+          <Field label="Tipo de Julgamento">
+            <SelectField value={form.tipo_julgamento_id} onChange={(v) => set("tipo_julgamento_id", v)} options={lookups?.tiposJulg.map((o) => ({ value: o.id, label: o.descricao })) ?? []} disabled={!canEdit} />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-sm">3. Gestor Responsável</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Field label="Nome do Gestor">
+            <Input value={form.gestor_responsavel} onChange={(e) => set("gestor_responsavel", e.target.value)} disabled={!canEdit} />
+          </Field>
+          <Field label="CPF/CNPJ">
+            <Input value={form.cpf_cnpj} onChange={(e) => set("cpf_cnpj", maskCpfCnpj(e.target.value))} disabled={!canEdit} />
+          </Field>
+          <Field label="Data de Trânsito em Julgado">
+            <Input type="date" value={form.data_transito_julgado} onChange={(e) => set("data_transito_julgado", e.target.value)} disabled={!canEdit} />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-sm">4. Observações</CardTitle></CardHeader>
+        <CardContent>
+          <Textarea value={form.observacoes} onChange={(e) => set("observacoes", e.target.value)} rows={3} disabled={!canEdit} />
+        </CardContent>
+      </Card>
+
+      {!isNew && registroId && (
+        <DeliberacoesGrid
+          registroId={registroId}
+          tipos={lookups?.tiposDel ?? []}
+          deliberacoes={deliberacoes ?? []}
+          onChange={refetchDel}
+          canEdit={canEdit}
+        />
+      )}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function SelectField({ value, onChange, options, disabled }: { value: string | null; onChange: (v: string | null) => void; options: { value: string; label: string }[]; disabled?: boolean }) {
+  return (
+    <Select value={value ?? undefined} onValueChange={(v) => onChange(v || null)} disabled={disabled}>
+      <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+      <SelectContent>
+        {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }: {
+  registroId: string;
+  tipos: any[];
+  deliberacoes: any[];
+  onChange: () => void;
+  canEdit: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<any>({ status_monitoramento: "em_monitoramento", deliberacao_solidaria: false });
+  const { user } = useAuth();
+
+  const tipoSel = tipos.find((t) => t.id === form.tipo_deliberacao_id);
+
+  const submit = async () => {
+    if (!form.tipo_deliberacao_id) { toast.error("Selecione o tipo de deliberação."); return; }
+    const payload = { ...form, registro_decisao_id: registroId, criado_por: user?.id, atualizado_por: user?.id };
+    const { error } = await supabase.from("deliberacoes").insert(payload);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Deliberação adicionada.");
+    setOpen(false);
+    setForm({ status_monitoramento: "em_monitoramento", deliberacao_solidaria: false });
+    onChange();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Excluir esta deliberação?")) return;
+    const { error } = await supabase.from("deliberacoes").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Excluída.");
+    onChange();
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-sm">Deliberações ({deliberacoes.length})</CardTitle>
+        {canEdit && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4" /> Nova</Button></DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle>Nova Deliberação</DialogTitle></DialogHeader>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Tipo de Deliberação *">
+                  <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} />
+                </Field>
+                <Field label="Status">
+                  <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="em_monitoramento">Em monitoramento</SelectItem>
+                      <SelectItem value="cumprida">Cumprida</SelectItem>
+                      <SelectItem value="descumprida">Descumprida</SelectItem>
+                      <SelectItem value="vencida">Vencida</SelectItem>
+                      <SelectItem value="cancelada">Cancelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <div className="col-span-2">
+                  <Field label="Descrição">
+                    <Textarea value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} />
+                  </Field>
+                </div>
+                {tipoSel?.gera_prazo && (
+                  <Field label="Prazo (dias)">
+                    <Input type="number" value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} />
+                  </Field>
+                )}
+                {tipoSel?.permite_valor && (
+                  <Field label="Valor (R$)">
+                    <Input type="number" step="0.01" value={form.valor ?? ""} onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })} />
+                  </Field>
+                )}
+                {tipoSel?.permite_unidade_medida && (
+                  <Field label="Unidade de Medida">
+                    <Input value={form.unidade_medida ?? ""} onChange={(e) => setForm({ ...form, unidade_medida: e.target.value })} />
+                  </Field>
+                )}
+                <div className="col-span-2">
+                  <Field label="Observação">
+                    <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} />
+                  </Field>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                <Button onClick={submit}>Adicionar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </CardHeader>
+      <CardContent>
+        {deliberacoes.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">Nenhuma deliberação cadastrada.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Prazo</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Criada</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {deliberacoes.map((d) => (
+                <TableRow key={d.id}>
+                  <TableCell>
+                    <Badge style={{ backgroundColor: (d.tipos_deliberacao as any)?.cor, color: "white" }}>
+                      {(d.tipos_deliberacao as any)?.descricao}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm max-w-md truncate">{d.descricao ?? "—"}</TableCell>
+                  <TableCell className="text-sm">{d.prazo_dias ? `${d.prazo_dias}d` : "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant={d.status_monitoramento === "cumprida" ? "default" : d.status_monitoramento === "descumprida" || d.status_monitoramento === "vencida" ? "destructive" : "secondary"}>
+                      {d.status_monitoramento}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{formatDate(d.criado_em?.slice(0, 10))}</TableCell>
+                  <TableCell>
+                    {canEdit && (
+                      <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
