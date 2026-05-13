@@ -59,6 +59,13 @@ export type Database = {
           deliberacao_solidaria: boolean
           descricao: string | null
           id: string
+          monitoramento_fim: string | null
+          monitoramento_inicio: string | null
+          monitoramento_numero_processo: string | null
+          monitoramento_processo_origem: boolean | null
+          monitoramento_tipo:
+            | Database["public"]["Enums"]["tipo_monitoramento"]
+            | null
           observacao: string | null
           prazo_dias: number | null
           registro_decisao_id: string
@@ -67,6 +74,7 @@ export type Database = {
           status_monitoramento: Database["public"]["Enums"]["status_monitoramento"]
           tipo_deliberacao_id: string | null
           unidade_medida: string | null
+          unidade_tecnica_id: string | null
           valor: number | null
         }
         Insert: {
@@ -80,6 +88,13 @@ export type Database = {
           deliberacao_solidaria?: boolean
           descricao?: string | null
           id?: string
+          monitoramento_fim?: string | null
+          monitoramento_inicio?: string | null
+          monitoramento_numero_processo?: string | null
+          monitoramento_processo_origem?: boolean | null
+          monitoramento_tipo?:
+            | Database["public"]["Enums"]["tipo_monitoramento"]
+            | null
           observacao?: string | null
           prazo_dias?: number | null
           registro_decisao_id: string
@@ -88,6 +103,7 @@ export type Database = {
           status_monitoramento?: Database["public"]["Enums"]["status_monitoramento"]
           tipo_deliberacao_id?: string | null
           unidade_medida?: string | null
+          unidade_tecnica_id?: string | null
           valor?: number | null
         }
         Update: {
@@ -101,6 +117,13 @@ export type Database = {
           deliberacao_solidaria?: boolean
           descricao?: string | null
           id?: string
+          monitoramento_fim?: string | null
+          monitoramento_inicio?: string | null
+          monitoramento_numero_processo?: string | null
+          monitoramento_processo_origem?: boolean | null
+          monitoramento_tipo?:
+            | Database["public"]["Enums"]["tipo_monitoramento"]
+            | null
           observacao?: string | null
           prazo_dias?: number | null
           registro_decisao_id?: string
@@ -109,6 +132,7 @@ export type Database = {
           status_monitoramento?: Database["public"]["Enums"]["status_monitoramento"]
           tipo_deliberacao_id?: string | null
           unidade_medida?: string | null
+          unidade_tecnica_id?: string | null
           valor?: number | null
         }
         Relationships: [
@@ -453,6 +477,33 @@ export type Database = {
         }
         Relationships: []
       }
+      unidades_tecnicas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          sigla: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          sigla?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          sigla?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -511,6 +562,7 @@ export type Database = {
         | "parcialmente_cumprido"
         | "vencido"
       status_registro: "rascunho" | "ativo" | "arquivado"
+      tipo_monitoramento: "processual" | "extraprocessual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -656,6 +708,7 @@ export const Constants = {
         "vencido",
       ],
       status_registro: ["rascunho", "ativo", "arquivado"],
+      tipo_monitoramento: ["processual", "extraprocessual"],
     },
   },
 } as const
