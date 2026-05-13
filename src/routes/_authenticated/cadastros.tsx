@@ -396,8 +396,9 @@ function FontesDados() {
         <p className="text-xs text-muted-foreground">
           Cadastre URLs de APIs que retornam JSON. Use <code className="bg-muted px-1 rounded">{"{query}"}</code> na URL para passar o termo de busca digitado pelo usuário (ex: número do processo). O sistema mapeia <strong>campo_label</strong> e <strong>campo_valor</strong> a partir de cada item retornado.
         </p>
-        {canEdit && (
-          <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="fontes_dados" />
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Fonte</Button></DialogTrigger>
               <DialogContent className="max-w-2xl">
