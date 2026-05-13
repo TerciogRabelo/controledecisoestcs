@@ -486,6 +486,30 @@ function FontesDados() {
         <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename="fontes_dados" />
           {canEdit && (
+            <ImportButton
+              table="fontes_dados"
+              hint="Colunas: nome, tipo_alvo, url, headers (JSON), caminho_lista, campo_label, campo_valor, ativo"
+              onDone={() => qc.invalidateQueries({ queryKey: ["fontes_dados"] })}
+              mapRow={(r) => {
+                if (!r.nome || !r.url) return null;
+                let headers: any = {};
+                if (r.headers) {
+                  try { headers = typeof r.headers === "string" ? JSON.parse(r.headers) : r.headers; } catch { headers = {}; }
+                }
+                return {
+                  nome: String(r.nome).trim(),
+                  tipo_alvo: r.tipo_alvo ? String(r.tipo_alvo) : "processos",
+                  url: String(r.url).trim(),
+                  headers,
+                  caminho_lista: r.caminho_lista ? String(r.caminho_lista).trim() : null,
+                  campo_label: r.campo_label ? String(r.campo_label).trim() : "label",
+                  campo_valor: r.campo_valor ? String(r.campo_valor).trim() : "value",
+                  ativo: r.ativo === false ? false : true,
+                };
+              }}
+            />
+          )}
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova Fonte</Button></DialogTrigger>
               <DialogContent className="max-w-2xl">
