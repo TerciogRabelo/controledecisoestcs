@@ -22,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/cadastros")({
 });
 
 function CadastrosPage() {
+  return (
     <Tabs defaultValue="unidades">
       <TabsList>
         <TabsTrigger value="unidades">Unidades Gestoras</TabsTrigger>
@@ -38,6 +39,8 @@ function CadastrosPage() {
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
       <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
+  );
+}
 
 function UnidadesGestoras() {
   const qc = useQueryClient();
