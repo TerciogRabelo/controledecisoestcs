@@ -362,17 +362,20 @@ function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" |
   return { label: `${diff}d restantes`, tone: "ok" };
 }
 
-function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }: {
+function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, deliberacoes, onChange, canEdit }: {
   registroId: string;
+  numeroProcessoOrigem: string;
   tipos: any[];
+  unidadesTec: any[];
   deliberacoes: any[];
   onChange: () => void;
   canEdit: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const emptyForm = { status_monitoramento: "em_monitoramento", deliberacao_solidaria: false };
+  const emptyForm = { status_monitoramento: "em_monitoramento", deliberacao_solidaria: false, anexos: [] as any[] };
   const [form, setForm] = useState<any>(emptyForm);
+  const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
 
   const tipoSel = tipos.find((t) => t.id === form.tipo_deliberacao_id);
@@ -393,8 +396,43 @@ function DeliberacoesGrid({ registroId, tipos, deliberacoes, onChange, canEdit }
       resposta_gestor: d.resposta_gestor,
       resultado_monitoramento: d.resultado_monitoramento,
       data_verificacao: d.data_verificacao,
+      unidade_tecnica_id: d.unidade_tecnica_id,
+      monitoramento_inicio: d.monitoramento_inicio,
+      monitoramento_fim: d.monitoramento_fim,
+      monitoramento_tipo: d.monitoramento_tipo,
+      monitoramento_processo_origem: d.monitoramento_processo_origem,
+      monitoramento_numero_processo: d.monitoramento_numero_processo,
+      anexos: d.anexos ?? [],
     });
     setOpen(true);
+  };
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const newAnexos: any[] = [...(form.anexos ?? [])];
+      for (const file of Array.from(files)) {
+        const path = `${registroId}/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage.from("deliberacao-anexos").upload(path, file);
+        if (error) { toast.error(`Falha ao enviar ${file.name}: ${error.message}`); continue; }
+        newAnexos.push({ path, nome: file.name, tamanho: file.size, criado_em: new Date().toISOString() });
+      }
+      setForm({ ...form, anexos: newAnexos });
+      toast.success("Evidência(s) enviada(s).");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAnexo = async (path: string) => {
+    await supabase.storage.from("deliberacao-anexos").remove([path]);
+    setForm({ ...form, anexos: (form.anexos ?? []).filter((a: any) => a.path !== path) });
+  };
+
+  const downloadAnexo = async (path: string) => {
+    const { data } = await supabase.storage.from("deliberacao-anexos").createSignedUrl(path, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
   const submit = async () => {
