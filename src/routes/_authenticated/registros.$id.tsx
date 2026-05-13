@@ -282,11 +282,19 @@ function RegistroFormPage() {
       <Card>
         <CardHeader><CardTitle className="text-sm">3. Gestor Responsável</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Field label="Nome do Gestor">
-            <Input value={form.gestor_responsavel} onChange={(e) => set("gestor_responsavel", e.target.value)} disabled={!canEdit} />
+          <Field label="CPF/CNPJ *">
+            <CpfCnpjLookup
+              value={form.cpf_cnpj}
+              onChange={(v) => set("cpf_cnpj", v)}
+              onMatch={(nome) => {
+                if (nome && !form.gestor_responsavel) set("gestor_responsavel", nome);
+              }}
+              disabled={!canEdit}
+              currentRegistroId={isNew ? null : id}
+            />
           </Field>
-          <Field label="CPF/CNPJ">
-            <Input value={form.cpf_cnpj} onChange={(e) => set("cpf_cnpj", maskCpfCnpj(e.target.value))} disabled={!canEdit} />
+          <Field label="Nome do Gestor">
+            <Input value={form.gestor_responsavel} onChange={(e) => set("gestor_responsavel", e.target.value)} disabled={!canEdit} placeholder="Preenchido automaticamente se já cadastrado" />
           </Field>
           <Field label="Data de Trânsito em Julgado">
             <Input type="date" max={TODAY} value={form.data_transito_julgado} onChange={(e) => set("data_transito_julgado", e.target.value)} disabled={!canEdit} />
