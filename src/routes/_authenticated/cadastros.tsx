@@ -133,6 +133,24 @@ function UnidadesGestoras() {
         <div className="flex justify-end gap-2">
           <ExportButton rows={data ?? []} filename="unidades_gestoras" />
           {canEdit && (
+            <ImportButton
+              table="unidades_gestoras"
+              onDone={() => qc.invalidateQueries({ queryKey: ["unidades_gestoras"] })}
+              hint="Colunas: nome_unidade, sigla, esfera, municipio, cnpj, status"
+              mapRow={(r) => {
+                if (!r.nome_unidade) return null;
+                return {
+                  nome_unidade: String(r.nome_unidade).trim(),
+                  sigla: r.sigla ? String(r.sigla).trim() : null,
+                  esfera: ["municipal", "estadual", "federal"].includes(String(r.esfera)) ? r.esfera : "municipal",
+                  municipio: r.municipio ? String(r.municipio).trim() : null,
+                  cnpj: r.cnpj ? String(r.cnpj).replace(/\D/g, "") : null,
+                  status: r.status === false || r.status === "false" || r.status === 0 ? false : true,
+                };
+              }}
+            />
+          )}
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEdit(null); }}>
               <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4" /> Nova Unidade</Button></DialogTrigger>
               <UnidadeForm initial={edit} onSave={save} onCancel={() => { setOpen(false); setEdit(null); }} />
