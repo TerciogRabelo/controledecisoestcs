@@ -428,8 +428,8 @@ function FontesDados() {
                 <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button onClick={save}>Salvar</Button></DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
         <Table>
           <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Popula</TableHead><TableHead>URL</TableHead><TableHead className="w-[80px]">Status</TableHead><TableHead className="w-[90px]"></TableHead></TableRow></TableHeader>
           <TableBody>
