@@ -270,8 +270,9 @@ function TiposDeliberacao() {
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
-        {canEdit && (
-          <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={data ?? []} filename="tipos_deliberacao" />
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Tipo</Button></DialogTrigger>
               <DialogContent>
