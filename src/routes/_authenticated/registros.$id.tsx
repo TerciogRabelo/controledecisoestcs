@@ -15,6 +15,8 @@ import { ArrowLeft, Save, Plus, Trash2, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { maskProcesso, maskCpfCnpj, formatDate } from "@/lib/masks";
 import { useAuth } from "@/lib/auth-context";
+import { useServerFn } from "@tanstack/react-start";
+import { fetchFonteExterna } from "@/lib/fontes.functions";
 
 export const Route = createFileRoute("/_authenticated/registros/$id")({
   component: RegistroFormPage,
