@@ -359,6 +359,7 @@ function TiposDeliberacao() {
               }}
             />
           )}
+          {canEdit && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
               <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Tipo</Button></DialogTrigger>
               <DialogContent>
