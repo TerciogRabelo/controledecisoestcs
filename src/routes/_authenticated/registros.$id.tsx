@@ -569,19 +569,23 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   </div>
                 </div>
               </div>
-              </div>
 
               {/* Bloco 2: Monitoramento */}
               <div className="rounded-md border-2 border-dashed border-primary/40 bg-primary/5 p-4 space-y-3 mt-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-primary">Monitoramento</p>
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Unidade Técnica Responsável">
-                    <SelectField
-                      value={form.unidade_tecnica_id ?? null}
-                      onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
-                      options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
-                      disabled={monitDisabled}
-                    />
+                  <Field label="Status">
+                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })} disabled={monitDisabled}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(statusOptions.length > 0
+                          ? statusOptions.map((s) => ({ value: s.codigo, label: s.descricao }))
+                          : Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))
+                        ).map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
                   <Field label="Tipo de Monitoramento">
                     <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })} disabled={monitDisabled}>
