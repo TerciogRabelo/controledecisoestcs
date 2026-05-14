@@ -99,6 +99,7 @@ function CadastrosPage() {
       <TabsContent value="tipos_julgamento"><SimpleCrud table="tipos_julgamento" label="Tipo de Julgamento" /></TabsContent>
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
       <TabsContent value="unidades_tecnicas"><UnidadesTecnicas /></TabsContent>
+      <TabsContent value="resultados_monitoramento"><SimpleCrud table="resultados_monitoramento" label="Resultado de Monitoramento" /></TabsContent>
       <TabsContent value="processos"><Processos /></TabsContent>
       <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
