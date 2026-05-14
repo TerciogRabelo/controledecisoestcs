@@ -122,8 +122,10 @@ function RegistroFormPage() {
   const isNew = id === "novo";
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { hasAnyRole, user } = useAuth();
+  const { hasAnyRole, hasRole, user, unidadeTecnicaId } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canEditMonitoramento = hasRole("admin") || hasRole("monitoramento");
+  const canCreateDeliberacao = hasAnyRole(["admin", "secretaria"]);
 
   const [form, setForm] = useState<RD>(empty);
   const [saving, setSaving] = useState(false);
@@ -325,6 +327,9 @@ function RegistroFormPage() {
           deliberacoes={deliberacoes ?? []}
           onChange={refetchDel}
           canEdit={canEdit}
+          canCreateDeliberacao={canCreateDeliberacao}
+          canEditMonitoramento={canEditMonitoramento}
+          userUnidadeTecnicaId={unidadeTecnicaId}
         />
       )}
     </div>
@@ -368,7 +373,7 @@ function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" |
   return { label: `${diff}d restantes`, tone: "ok" };
 }
 
-function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, deliberacoes, onChange, canEdit }: {
+function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, deliberacoes, onChange, canEdit, canCreateDeliberacao, canEditMonitoramento, userUnidadeTecnicaId }: {
   registroId: string;
   numeroProcessoOrigem: string;
   tipos: any[];
@@ -377,6 +382,9 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
   deliberacoes: any[];
   onChange: () => void;
   canEdit: boolean;
+  canCreateDeliberacao: boolean;
+  canEditMonitoramento: boolean;
+  userUnidadeTecnicaId: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -492,13 +500,21 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
     onChange();
   };
 
+  // Permissões dentro do diálogo:
+  // - Bloco "Deliberação" só pode ser editado por admin/secretaria
+  // - Bloco "Monitoramento" só pode ser editado por admin/monitoramento
+  const delibDisabled = !canEdit;
+  const monitDisabled = !canEditMonitoramento;
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm">Deliberações ({deliberacoes.length})</CardTitle>
-        {canEdit && (
+        {(canCreateDeliberacao || canEditMonitoramento) && (
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
-            <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova</Button></DialogTrigger>
+            {canCreateDeliberacao && (
+              <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova</Button></DialogTrigger>
+            )}
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{editing ? "Editar Deliberação" : "Nova Deliberação"}</DialogTitle></DialogHeader>
 
@@ -507,10 +523,10 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Deliberação</p>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Tipo de Deliberação *">
-                    <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} />
+                    <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} disabled={delibDisabled} />
                   </Field>
                   <Field label="Status">
-                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })}>
+                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })} disabled={delibDisabled}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {Object.entries(STATUS_LABELS).map(([k, v]) => (
@@ -521,32 +537,32 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   </Field>
                   <div className="col-span-2">
                     <Field label="Descrição">
-                      <Textarea value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} />
+                      <Textarea value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} disabled={delibDisabled} />
                     </Field>
                   </div>
                   {tipoSel?.gera_prazo && (
                     <>
                       <Field label="Data de Início do Prazo *">
-                        <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} />
+                        <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} disabled={delibDisabled} />
                       </Field>
                       <Field label="Prazo (dias) *">
-                        <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} />
+                        <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} disabled={delibDisabled} />
                       </Field>
                     </>
                   )}
                   {tipoSel?.permite_valor && (
                     <Field label="Valor (R$)">
-                      <Input type="number" step="0.01" value={form.valor ?? ""} onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })} />
+                      <Input type="number" step="0.01" value={form.valor ?? ""} onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })} disabled={delibDisabled} />
                     </Field>
                   )}
                   {tipoSel?.permite_unidade_medida && (
                     <Field label="Unidade de Medida">
-                      <Input value={form.unidade_medida ?? ""} onChange={(e) => setForm({ ...form, unidade_medida: e.target.value })} />
+                      <Input value={form.unidade_medida ?? ""} onChange={(e) => setForm({ ...form, unidade_medida: e.target.value })} disabled={delibDisabled} />
                     </Field>
                   )}
                   <div className="col-span-2">
                     <Field label="Observação">
-                      <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} />
+                      <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} disabled={delibDisabled} />
                     </Field>
                   </div>
                 </div>
@@ -561,10 +577,11 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       value={form.unidade_tecnica_id ?? null}
                       onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
                       options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
+                      disabled={monitDisabled}
                     />
                   </Field>
                   <Field label="Tipo de Monitoramento">
-                    <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })}>
+                    <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })} disabled={monitDisabled}>
                       <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="processual">Processual</SelectItem>
@@ -573,10 +590,10 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </Select>
                   </Field>
                   <Field label="Início do Monitoramento">
-                    <Input type="date" value={form.monitoramento_inicio ?? ""} onChange={(e) => setForm({ ...form, monitoramento_inicio: e.target.value })} />
+                    <Input type="date" value={form.monitoramento_inicio ?? ""} onChange={(e) => setForm({ ...form, monitoramento_inicio: e.target.value })} disabled={monitDisabled} />
                   </Field>
                   <Field label="Fim Previsto do Monitoramento">
-                    <Input type="date" value={form.monitoramento_fim ?? ""} onChange={(e) => setForm({ ...form, monitoramento_fim: e.target.value })} />
+                    <Input type="date" value={form.monitoramento_fim ?? ""} onChange={(e) => setForm({ ...form, monitoramento_fim: e.target.value })} disabled={monitDisabled} />
                   </Field>
                   {form.monitoramento_tipo === "processual" && (
                     <>
@@ -584,6 +601,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                         <Select
                           value={form.monitoramento_processo_origem === true ? "origem" : form.monitoramento_processo_origem === false ? "outro" : ""}
                           onValueChange={(v) => setForm({ ...form, monitoramento_processo_origem: v === "origem" })}
+                          disabled={monitDisabled}
                         >
                           <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
                           <SelectContent>
@@ -594,17 +612,17 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       </Field>
                       {form.monitoramento_processo_origem === false && (
                         <Field label="Número do Outro Processo *">
-                          <Input value={form.monitoramento_numero_processo ?? ""} onChange={(e) => setForm({ ...form, monitoramento_numero_processo: maskProcesso(e.target.value) })} placeholder="000000/0000" />
+                          <Input value={form.monitoramento_numero_processo ?? ""} onChange={(e) => setForm({ ...form, monitoramento_numero_processo: maskProcesso(e.target.value) })} placeholder="000000/0000" disabled={monitDisabled} />
                         </Field>
                       )}
                     </>
                   )}
                   <Field label="Data de Verificação">
-                    <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} />
+                    <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} disabled={monitDisabled} />
                   </Field>
                   <div className="col-span-2">
                     <Field label="Resposta do Gestor">
-                      <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} />
+                      <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} disabled={monitDisabled} />
                     </Field>
                   </div>
                   <div className="col-span-2">
@@ -613,24 +631,27 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       value={form.resultado_monitoramento_id ?? null}
                       onChange={(v) => setForm({ ...form, resultado_monitoramento_id: v })}
                       options={resultadosMon.map((r) => ({ value: r.id, label: r.descricao }))}
+                      disabled={monitDisabled}
                     />
                   </Field>
                   <div className="col-span-2">
                     <Field label="Detalhamento do Resultado (opcional)">
-                      <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} />
+                      <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} disabled={monitDisabled} />
                     </Field>
                   </div>
                   </div>
                   <div className="col-span-2">
                     <Field label="Evidências">
                       <div className="space-y-2">
-                        <Input type="file" multiple disabled={uploading} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
+                        <Input type="file" multiple disabled={uploading || monitDisabled} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
                         {(form.anexos ?? []).length > 0 && (
                           <ul className="text-xs space-y-1">
                             {(form.anexos ?? []).map((a: any) => (
                               <li key={a.path} className="flex items-center justify-between bg-background border border-border rounded px-2 py-1">
                                 <button type="button" className="truncate text-left hover:underline flex-1" onClick={() => downloadAnexo(a.path)}>{a.nome}</button>
-                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAnexo(a.path)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                {!monitDisabled && (
+                                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAnexo(a.path)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                )}
                               </li>
                             ))}
                           </ul>
@@ -692,16 +713,23 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </TableCell>
                     <TableCell className="text-sm">{formatDate(d.criado_em?.slice(0, 10))}</TableCell>
                     <TableCell>
-                      {canEdit && (
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      )}
+                      {(() => {
+                        const canEditRow = canEdit || (canEditMonitoramento && d.unidade_tecnica_id && d.unidade_tecnica_id === userUnidadeTecnicaId);
+                        const canDeleteRow = canEdit; /* RLS permite apenas admin de fato */
+                        if (!canEditRow) return null;
+                        return (
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {canDeleteRow && (
+                              <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                   </TableRow>
                 );

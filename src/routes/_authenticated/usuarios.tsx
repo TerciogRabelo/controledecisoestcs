@@ -28,11 +28,12 @@ function UsuariosPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["usuarios"],
     queryFn: async () => {
-      const [profiles, roles] = await Promise.all([
-        supabase.from("profiles").select("*").order("nome"),
+      const [profiles, roles, uts] = await Promise.all([
+        (supabase as any).from("profiles").select("*").order("nome"),
         supabase.from("user_roles").select("*"),
+        (supabase as any).from("unidades_tecnicas").select("id, nome, sigla").eq("ativo", true).order("nome"),
       ]);
-      return { profiles: profiles.data ?? [], roles: roles.data ?? [] };
+      return { profiles: profiles.data ?? [], roles: roles.data ?? [], uts: uts.data ?? [] };
     },
   });
 
@@ -51,7 +52,18 @@ function UsuariosPage() {
     await supabase.from("user_roles").delete().eq("user_id", uid);
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role });
     if (error) { toast.error(error.message); return; }
+    // Se mudou para perfil que não é monitoramento, limpa a UT
+    if (role !== "monitoramento") {
+      await (supabase as any).from("profiles").update({ unidade_tecnica_id: null }).eq("id", uid);
+    }
     toast.success("Perfil atualizado.");
+    qc.invalidateQueries({ queryKey: ["usuarios"] });
+  };
+
+  const setUnidadeTecnica = async (uid: string, ut: string | null) => {
+    const { error } = await (supabase as any).from("profiles").update({ unidade_tecnica_id: ut }).eq("id", uid);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Unidade técnica atualizada.");
     qc.invalidateQueries({ queryKey: ["usuarios"] });
   };
 
@@ -64,8 +76,9 @@ function UsuariosPage() {
 
   const getCurrentRole = (uid: string) => data?.roles.find((r) => r.user_id === uid)?.role ?? "consulta";
 
-  const profiles = data?.profiles ?? [];
-  const pendentes = profiles.filter((p) => !p.aprovado);
+  const profiles: any[] = data?.profiles ?? [];
+  const uts: any[] = data?.uts ?? [];
+  const pendentes = profiles.filter((p: any) => !p.aprovado);
 
   return (
     <div className="space-y-4">
@@ -85,16 +98,18 @@ function UsuariosPage() {
                 <TableHead>E-mail</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Perfil</TableHead>
-                <TableHead className="w-[200px]">Alterar Perfil</TableHead>
+                <TableHead className="w-[180px]">Alterar Perfil</TableHead>
+                <TableHead className="w-[200px]">Unidade Técnica</TableHead>
                 <TableHead className="w-[140px]">Acesso</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
-              ) : profiles.map((p) => {
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
+              ) : profiles.map((p: any) => {
                 const role = getCurrentRole(p.id);
                 const isMe = p.id === user?.id;
+                const isMonit = role === "monitoramento";
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.nome} {isMe && <Badge variant="outline" className="ml-2">você</Badge>}</TableCell>
@@ -112,6 +127,28 @@ function UsuariosPage() {
                           {ROLES.map((r) => <SelectItem key={r.v} value={r.v}>{r.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                    </TableCell>
+                    <TableCell>
+                      {isMonit ? (
+                        <Select
+                          value={p.unidade_tecnica_id ?? ""}
+                          onValueChange={(v) => setUnidadeTecnica(p.id, v || null)}
+                          disabled={!p.aprovado}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione UT…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {uts.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.sigla ? `${u.sigla} — ${u.nome}` : u.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {isMe ? (
