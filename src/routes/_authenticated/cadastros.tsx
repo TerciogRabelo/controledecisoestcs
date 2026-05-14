@@ -945,6 +945,14 @@ function Tribunais() {
     refreshRoles();
   };
 
+  const remove = async (t: any) => {
+    if (!confirm(`Excluir tribunal "${t.sigla}"? Só será concluído se não houver usuários ou registros vinculados.`)) return;
+    const { error } = await (supabase as any).from("tribunais").delete().eq("id", t.id);
+    if (error) { toast.error("Não foi possível excluir: existem vínculos com este tribunal. Considere desativá-lo."); return; }
+    toast.success("Excluído.");
+    qc.invalidateQueries({ queryKey: ["tribunais"] });
+  };
+
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
@@ -985,9 +993,14 @@ function Tribunais() {
                 <TableCell><Badge variant="outline">{t.esfera}</Badge></TableCell>
                 <TableCell><Badge variant={t.ativo ? "default" : "outline"}>{t.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
                 <TableCell>
-                  {(isMaster || (isAdmin && t.id === tribunalId)) && (
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                  )}
+                  <div className="flex gap-1">
+                    {(isMaster || (isAdmin && t.id === tribunalId)) && (
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
+                    )}
+                    {isMaster && (
+                      <Button variant="ghost" size="icon" onClick={() => remove(t)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
