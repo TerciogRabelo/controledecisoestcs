@@ -113,14 +113,16 @@ function UsuariosPage() {
                 <TableHead>E-mail</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Perfil</TableHead>
-                <TableHead className="w-[180px]">Alterar Perfil</TableHead>
-                <TableHead className="w-[200px]">Unidade Técnica</TableHead>
+                <TableHead className="w-[160px]">Alterar Perfil</TableHead>
+                <TableHead className="w-[180px]">Tribunal</TableHead>
+                <TableHead className="w-[180px]">Unidade Técnica</TableHead>
+                <TableHead className="w-[80px]">Master</TableHead>
                 <TableHead className="w-[140px]">Acesso</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
               ) : profiles.map((p: any) => {
                 const role = getCurrentRole(p.id);
                 const isMe = p.id === user?.id;
