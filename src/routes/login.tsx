@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, ShieldCheck } from "lucide-react";
 
@@ -27,6 +30,15 @@ function LoginPage() {
   const [nome, setNome] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [signupTribunal, setSignupTribunal] = useState<string>("");
+
+  const { data: tribunais = [] } = useQuery({
+    queryKey: ["tribunais-public"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("tribunais").select("id, sigla, nome").eq("ativo", true).order("sigla");
+      return data ?? [];
+    },
+  });
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard" });
@@ -51,15 +63,17 @@ function LoginPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
+    if (!signupTribunal) { toast.error("Selecione o tribunal."); return; }
     setSubmitting(true);
     try {
-      const { error } = await signUp(signupEmail, signupPassword, nome);
+      const { error } = await signUp(signupEmail, signupPassword, nome, signupTribunal);
       if (error) throw error;
-      toast.success("Cadastro realizado. Faça login para continuar.");
+      toast.success("Cadastro realizado. Aguarde aprovação do administrador.");
       setLoginEmail(signupEmail);
       setNome("");
       setSignupEmail("");
       setSignupPassword("");
+      setSignupTribunal("");
       setTab("login");
     } catch (err) {
       toast.error((err as Error).message || "Erro ao cadastrar");
