@@ -160,6 +160,13 @@ export type Database = {
             referencedRelation: "tipos_deliberacao"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deliberacoes_unidade_tecnica_id_fkey"
+            columns: ["unidade_tecnica_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_tecnicas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fontes_dados: {

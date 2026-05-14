@@ -1,0 +1,1 @@
+ALTER TABLE public.deliberacoes ADD CONSTRAINT deliberacoes_unidade_tecnica_id_fkey FOREIGN KEY (unidade_tecnica_id) REFERENCES public.unidades_tecnicas(id) ON DELETE SET NULL;
