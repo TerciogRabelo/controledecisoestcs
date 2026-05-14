@@ -132,15 +132,16 @@ function RegistroFormPage() {
   const { data: lookups } = useQuery({
     queryKey: ["lookups"],
     queryFn: async () => {
-      const [u, o, td, tj, tdel, ut] = await Promise.all([
+      const [u, o, td, tj, tdel, ut, rm] = await Promise.all([
         supabase.from("unidades_gestoras").select("id, nome_unidade, sigla").eq("status", true).order("nome_unidade"),
         supabase.from("orgaos_julgadores").select("id, descricao").eq("ativo", true).order("descricao"),
         supabase.from("tipos_decisao").select("id, descricao").eq("ativo", true).order("descricao"),
         supabase.from("tipos_julgamento").select("id, descricao").eq("ativo", true).order("descricao"),
         supabase.from("tipos_deliberacao").select("*").eq("ativo", true).order("descricao"),
         (supabase as any).from("unidades_tecnicas").select("id, nome, sigla").eq("ativo", true).order("nome"),
+        (supabase as any).from("resultados_monitoramento").select("id, descricao").eq("ativo", true).order("ordem"),
       ]);
-      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [], unidadesTec: ut.data ?? [] };
+      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [], unidadesTec: ut.data ?? [], resultadosMon: rm.data ?? [] };
     },
   });
 
@@ -311,11 +312,16 @@ function RegistroFormPage() {
       </Card>
 
       {!isNew && registroId && (
+        <RegistroAnexos registroId={registroId} canEdit={canEdit} />
+      )}
+
+      {!isNew && registroId && (
         <DeliberacoesGrid
           registroId={registroId}
           numeroProcessoOrigem={form.numero_processo}
           tipos={lookups?.tiposDel ?? []}
           unidadesTec={lookups?.unidadesTec ?? []}
+          resultadosMon={lookups?.resultadosMon ?? []}
           deliberacoes={deliberacoes ?? []}
           onChange={refetchDel}
           canEdit={canEdit}
@@ -362,11 +368,12 @@ function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" |
   return { label: `${diff}d restantes`, tone: "ok" };
 }
 
-function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, deliberacoes, onChange, canEdit }: {
+function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, deliberacoes, onChange, canEdit }: {
   registroId: string;
   numeroProcessoOrigem: string;
   tipos: any[];
   unidadesTec: any[];
+  resultadosMon: any[];
   deliberacoes: any[];
   onChange: () => void;
   canEdit: boolean;
@@ -395,6 +402,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
       unidade_medida: d.unidade_medida,
       resposta_gestor: d.resposta_gestor,
       resultado_monitoramento: d.resultado_monitoramento,
+      resultado_monitoramento_id: d.resultado_monitoramento_id,
       data_verificacao: d.data_verificacao,
       unidade_tecnica_id: d.unidade_tecnica_id,
       monitoramento_inicio: d.monitoramento_inicio,
@@ -600,9 +608,18 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </Field>
                   </div>
                   <div className="col-span-2">
-                    <Field label="Resultado do Monitoramento">
+                  <Field label="Resultado do Monitoramento">
+                    <SelectField
+                      value={form.resultado_monitoramento_id ?? null}
+                      onChange={(v) => setForm({ ...form, resultado_monitoramento_id: v })}
+                      options={resultadosMon.map((r) => ({ value: r.id, label: r.descricao }))}
+                    />
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="Detalhamento do Resultado (opcional)">
                       <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} />
                     </Field>
+                  </div>
                   </div>
                   <div className="col-span-2">
                     <Field label="Evidências">
@@ -736,5 +753,80 @@ function CpfCnpjLookup({ value, onChange, onMatch, disabled, currentRegistroId }
       />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
+  );
+}
+
+function RegistroAnexos({ registroId, canEdit }: { registroId: string; canEdit: boolean }) {
+  const [anexos, setAnexos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("registros_decisao").select("anexos").eq("id", registroId).single();
+      setAnexos(((data as any)?.anexos as any[]) ?? []);
+      setLoading(false);
+    })();
+  }, [registroId]);
+
+  const persist = async (next: any[]) => {
+    setAnexos(next);
+    const { error } = await (supabase as any).from("registros_decisao").update({ anexos: next }).eq("id", registroId);
+    if (error) toast.error(error.message);
+  };
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const next = [...anexos];
+      for (const file of Array.from(files)) {
+        const path = `registros/${registroId}/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage.from("deliberacao-anexos").upload(path, file);
+        if (error) { toast.error(`Falha ao enviar ${file.name}: ${error.message}`); continue; }
+        next.push({ path, nome: file.name, tamanho: file.size, criado_em: new Date().toISOString() });
+      }
+      await persist(next);
+      toast.success("Arquivo(s) anexado(s).");
+    } finally { setUploading(false); }
+  };
+
+  const remove = async (path: string) => {
+    await supabase.storage.from("deliberacao-anexos").remove([path]);
+    await persist(anexos.filter((a) => a.path !== path));
+  };
+
+  const download = async (path: string) => {
+    const { data } = await supabase.storage.from("deliberacao-anexos").createSignedUrl(path, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm">5. Anexos do Registro (acórdão, decisão etc.)</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        {canEdit && (
+          <Input type="file" multiple disabled={uploading} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
+        )}
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Carregando…</p>
+        ) : anexos.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhum anexo.</p>
+        ) : (
+          <ul className="text-sm space-y-1">
+            {anexos.map((a) => (
+              <li key={a.path} className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5">
+                <button type="button" className="truncate text-left hover:underline flex-1" onClick={() => download(a.path)}>{a.nome}</button>
+                {canEdit && (
+                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => remove(a.path)}>
+                    <Trash2 className="h-3 w-3 text-destructive" />
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

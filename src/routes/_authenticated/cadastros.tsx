@@ -88,7 +88,8 @@ function CadastrosPage() {
         <TabsTrigger value="tipos_decisao">Tipos de Decisão</TabsTrigger>
         <TabsTrigger value="tipos_julgamento">Tipos de Julgamento</TabsTrigger>
         <TabsTrigger value="tipos_deliberacao">Tipos de Deliberação</TabsTrigger>
-        <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
+       <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
+        <TabsTrigger value="resultados_monitoramento">Resultados Monitoramento</TabsTrigger>
         <TabsTrigger value="processos">Processos</TabsTrigger>
         <TabsTrigger value="fontes">Fontes Externas (API)</TabsTrigger>
       </TabsList>
@@ -98,6 +99,7 @@ function CadastrosPage() {
       <TabsContent value="tipos_julgamento"><SimpleCrud table="tipos_julgamento" label="Tipo de Julgamento" /></TabsContent>
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
       <TabsContent value="unidades_tecnicas"><UnidadesTecnicas /></TabsContent>
+      <TabsContent value="resultados_monitoramento"><SimpleCrud table="resultados_monitoramento" label="Resultado de Monitoramento" /></TabsContent>
       <TabsContent value="processos"><Processos /></TabsContent>
       <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
@@ -234,7 +236,7 @@ function UnidadeForm({ initial, onSave, onCancel }: any) {
   );
 }
 
-function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_decisao" | "tipos_julgamento"; label: string }) {
+function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_decisao" | "tipos_julgamento" | "resultados_monitoramento"; label: string }) {
   const qc = useQueryClient();
   const { hasAnyRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
