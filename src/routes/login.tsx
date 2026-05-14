@@ -160,6 +160,19 @@ function LoginPage() {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="signup-tribunal">Tribunal *</Label>
+                    <Select value={signupTribunal} onValueChange={setSignupTribunal}>
+                      <SelectTrigger id="signup-tribunal">
+                        <SelectValue placeholder="Selecione seu tribunal…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tribunais.map((t: any) => (
+                          <SelectItem key={t.id} value={t.id}>{t.sigla} — {t.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="signup-password">Senha</Label>
                     <Input
                       id="signup-password"
