@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, FileStack } from "lucide-react";
+import { Plus, Search, FileStack, Pencil, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { formatDate } from "@/lib/masks";
 import { useAuth } from "@/lib/auth-context";
