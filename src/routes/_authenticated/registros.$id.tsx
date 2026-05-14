@@ -221,6 +221,17 @@ function RegistroFormPage() {
         if (error) throw error;
         toast.success("Registro atualizado.");
       }
+      // Popula a lista de processos se ainda não existir
+      try {
+        const { data: existing } = await supabase
+          .from("processos")
+          .select("id")
+          .eq("numero", form.numero_processo)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from("processos").insert({ numero: form.numero_processo, ativo: true });
+        }
+      } catch { /* silencioso: não bloqueia o fluxo */ }
       qc.invalidateQueries({ queryKey: ["registros"] });
     } catch (e) {
       toast.error((e as Error).message);
