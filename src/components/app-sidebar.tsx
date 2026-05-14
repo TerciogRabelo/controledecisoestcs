@@ -4,7 +4,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Gavel, Users, ShieldCheck, LogOut, Bell, Database } from "lucide-react";
+import { LayoutDashboard, Gavel, Users, ShieldCheck, LogOut, Bell, Database, BookOpen } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -115,6 +115,14 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Tutorial de Implantação">
+                    <a href="/DEPLOY_INTRANET.md" download="DEPLOY_INTRANET.md">
+                      <BookOpen className="h-4 w-4" />
+                      <span>Tutorial de Implantação</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
