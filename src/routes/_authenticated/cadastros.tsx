@@ -654,8 +654,9 @@ function FontesDados() {
 
 function UnidadesTecnicas() {
   const qc = useQueryClient();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canDelete = hasRole("admin");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const emptyForm = { nome: "", sigla: "", ativo: true };
@@ -683,6 +684,14 @@ function UnidadesTecnicas() {
 
   const toggle = async (u: any) => {
     await (supabase as any).from("unidades_tecnicas").update({ ativo: !u.ativo }).eq("id", u.id);
+    qc.invalidateQueries({ queryKey: ["unidades_tecnicas"] });
+  };
+
+  const remove = async (u: any) => {
+    if (!confirm(`Excluir "${u.nome}"? Só será concluído se não houver registros associados.`)) return;
+    const { error } = await (supabase as any).from("unidades_tecnicas").delete().eq("id", u.id);
+    if (error) { toast.error("Não foi possível excluir: existem registros que utilizam esta unidade técnica. Considere desativá-la."); return; }
+    toast.success("Excluído.");
     qc.invalidateQueries({ queryKey: ["unidades_tecnicas"] });
   };
 
@@ -726,7 +735,10 @@ function UnidadesTecnicas() {
                   {canEdit ? <Switch checked={u.ativo} onCheckedChange={() => toggle(u)} /> : <Badge variant={u.ativo ? "default" : "outline"}>{u.ativo ? "Ativa" : "Inativa"}</Badge>}
                 </TableCell>
                 <TableCell>
-                  {canEdit && <Button variant="ghost" size="icon" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>}
+                  <div className="flex gap-1">
+                    {canEdit && <Button variant="ghost" size="icon" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>}
+                    {canDelete && <Button variant="ghost" size="icon" onClick={() => remove(u)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
