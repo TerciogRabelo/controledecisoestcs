@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
 import { formatDate } from "@/lib/masks";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/avisos")({
   component: AvisosPage,
@@ -26,6 +27,7 @@ type Aviso = {
   registro_id: string;
   numero_processo: string;
   tipo: string;
+  unidade_tecnica: string;
   prazo_label: string;
   data_alvo: string;
   dias: number;
@@ -33,13 +35,21 @@ type Aviso = {
 };
 
 function AvisosPage() {
+  const { hasRole, isMaster, unidadeTecnicaId } = useAuth();
+  // Monitoramento (sem admin/master) só vê os da sua UT
+  const restrictToUT = hasRole("monitoramento") && !hasRole("admin") && !isMaster;
+
   const { data: deliberacoes } = useQuery({
-    queryKey: ["avisos_deliberacoes"],
+    queryKey: ["avisos_deliberacoes", restrictToUT ? unidadeTecnicaId : "all"],
     queryFn: async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("deliberacoes")
-        .select("*, tipos_deliberacao(descricao, gera_prazo), registros_decisao(id, numero_processo)")
-        .in("status_monitoramento", ["em_monitoramento", "vencido", "nao_cumprido", "parcialmente_cumprido"] as any);
+        .select("*, tipos_deliberacao(descricao, gera_prazo), registros_decisao(id, numero_processo), unidades_tecnicas(nome, sigla)")
+        .in("status_monitoramento", ["em_monitoramento", "vencido", "nao_cumprido", "parcialmente_cumprido", "nao_iniciado"] as any);
+      if (restrictToUT && unidadeTecnicaId) {
+        q = q.eq("unidade_tecnica_id", unidadeTecnicaId);
+      }
+      const { data } = await q;
       return data ?? [];
     },
   });
@@ -49,8 +59,8 @@ function AvisosPage() {
     for (const d of (deliberacoes ?? []) as any[]) {
       const reg = d.registros_decisao;
       if (!reg) continue;
+      const ut = d.unidades_tecnicas ? (d.unidades_tecnicas.sigla ?? d.unidades_tecnicas.nome) : "—";
 
-      // Prazo da deliberação
       if (d.tipos_deliberacao?.gera_prazo && d.prazo_dias && d.data_inicio_prazo) {
         const fim = new Date(d.data_inicio_prazo + "T00:00:00");
         fim.setDate(fim.getDate() + Number(d.prazo_dias));
@@ -63,6 +73,7 @@ function AvisosPage() {
             registro_id: reg.id,
             numero_processo: reg.numero_processo,
             tipo: d.tipos_deliberacao?.descricao ?? "Deliberação",
+            unidade_tecnica: ut,
             prazo_label: dias < 0 ? `Vencida há ${-dias}d` : `${dias}d restantes`,
             data_alvo: fimStr,
             dias,
@@ -71,7 +82,6 @@ function AvisosPage() {
         }
       }
 
-      // Prazo do monitoramento
       if (d.monitoramento_fim) {
         const dias = diffDays(d.monitoramento_fim);
         if (dias <= 15) {
@@ -81,6 +91,7 @@ function AvisosPage() {
             registro_id: reg.id,
             numero_processo: reg.numero_processo,
             tipo: d.tipos_deliberacao?.descricao ?? "Deliberação",
+            unidade_tecnica: ut,
             prazo_label: dias < 0 ? `Vencido há ${-dias}d` : `${dias}d restantes`,
             data_alvo: d.monitoramento_fim,
             dias,
@@ -99,11 +110,12 @@ function AvisosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Controle de Avisos</h2>
+        <h2 className="text-lg font-semibold">Controle de Avisos {restrictToUT && <span className="text-xs text-muted-foreground font-normal">(filtrado pela sua unidade técnica)</span>}</h2>
         <p className="text-xs text-muted-foreground">Pendências de prazo de deliberações e de monitoramento.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard label="Total de avisos" count={avisos.length} icon={<AlertTriangle className="h-4 w-4" />} tone="muted" />
         <StatCard label="Vencidos" count={vencidos.length} icon={<AlertTriangle className="h-4 w-4" />} tone="destructive" />
         <StatCard label="Vencem em até 7 dias" count={urgentes.length} icon={<Clock className="h-4 w-4" />} tone="warning" />
         <StatCard label="Vencem em 8-15 dias" count={atencao.length} icon={<CheckCircle2 className="h-4 w-4" />} tone="muted" />
@@ -121,6 +133,7 @@ function AvisosPage() {
                   <TableHead>Origem</TableHead>
                   <TableHead>Processo</TableHead>
                   <TableHead>Deliberação</TableHead>
+                  <TableHead>Unidade Técnica</TableHead>
                   <TableHead>Data limite</TableHead>
                   <TableHead>Situação</TableHead>
                 </TableRow>
@@ -139,6 +152,7 @@ function AvisosPage() {
                       </Link>
                     </TableCell>
                     <TableCell className="text-sm">{a.tipo}</TableCell>
+                    <TableCell className="text-sm">{a.unidade_tecnica}</TableCell>
                     <TableCell className="text-sm">{formatDate(a.data_alvo)}</TableCell>
                     <TableCell>
                       <Badge variant={a.severity === "vencido" ? "destructive" : a.severity === "urgente" ? "default" : "secondary"}>
