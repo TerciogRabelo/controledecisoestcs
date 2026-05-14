@@ -882,6 +882,7 @@ function StatusMonitoramento() {
               <TableHead className="w-[80px]">Ordem</TableHead>
               <TableHead className="w-[80px]">Cor</TableHead>
               <TableHead className="w-[100px]">Status</TableHead>
+              {canEdit && <TableHead className="w-[60px]"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
