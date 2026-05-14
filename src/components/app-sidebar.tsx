@@ -23,20 +23,24 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { signOut, user, hasRole } = useAuth();
+  const { signOut, user, hasRole, tribunal } = useAuth();
   const isActive = (url: string) => path === url || path.startsWith(url + "/");
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b">
         <div className="flex items-center gap-3 px-2 py-3">
-          <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-            <ShieldCheck className="h-5 w-5" />
+          <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0 overflow-hidden">
+            {tribunal?.logo_url ? (
+              <img src={tribunal.logo_url} alt={tribunal.sigla} className="h-9 w-9 object-contain bg-white" />
+            ) : (
+              <ShieldCheck className="h-5 w-5" />
+            )}
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-bold leading-tight truncate">TCE-PI</p>
-              <p className="text-xs text-muted-foreground truncate">Gestão de Decisões</p>
+              <p className="text-sm font-bold leading-tight truncate">{tribunal?.sigla ?? "Sistema"}</p>
+              <p className="text-xs text-muted-foreground truncate">{tribunal?.nome ?? "Gestão de Decisões"}</p>
             </div>
           )}
         </div>

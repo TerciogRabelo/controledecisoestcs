@@ -82,14 +82,16 @@ export const Route = createFileRoute("/_authenticated/cadastros")({
 function CadastrosPage() {
   return (
     <Tabs defaultValue="unidades">
-      <TabsList>
+      <TabsList className="flex-wrap h-auto">
         <TabsTrigger value="unidades">Unidades Gestoras</TabsTrigger>
         <TabsTrigger value="orgaos">Órgãos Julgadores</TabsTrigger>
         <TabsTrigger value="tipos_decisao">Tipos de Decisão</TabsTrigger>
         <TabsTrigger value="tipos_julgamento">Tipos de Julgamento</TabsTrigger>
         <TabsTrigger value="tipos_deliberacao">Tipos de Deliberação</TabsTrigger>
-       <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
+        <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
         <TabsTrigger value="resultados_monitoramento">Resultados Monitoramento</TabsTrigger>
+        <TabsTrigger value="status_monitoramento">Status Monitoramento</TabsTrigger>
+        <TabsTrigger value="tribunais">Tribunais</TabsTrigger>
         <TabsTrigger value="processos">Processos</TabsTrigger>
         <TabsTrigger value="fontes">Fontes Externas (API)</TabsTrigger>
       </TabsList>
@@ -100,6 +102,8 @@ function CadastrosPage() {
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
       <TabsContent value="unidades_tecnicas"><UnidadesTecnicas /></TabsContent>
       <TabsContent value="resultados_monitoramento"><SimpleCrud table="resultados_monitoramento" label="Resultado de Monitoramento" /></TabsContent>
+      <TabsContent value="status_monitoramento"><StatusMonitoramento /></TabsContent>
+      <TabsContent value="tribunais"><Tribunais /></TabsContent>
       <TabsContent value="processos"><Processos /></TabsContent>
       <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
@@ -308,7 +312,7 @@ function TiposDeliberacao() {
   const canEdit = hasAnyRole(["admin", "secretaria"]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const emptyForm = { cor: "#1e40af", icone: "gavel", gera_prazo: false, permite_valor: false, permite_unidade_medida: false, ativo: true };
+  const emptyForm = { cor: "#1e40af", icone: "gavel", gera_prazo: false, prazo_facultativo: false, permite_valor: false, permite_unidade_medida: false, ativo: true };
   const [form, setForm] = useState<any>(emptyForm);
 
   const { data } = useQuery({
@@ -344,7 +348,7 @@ function TiposDeliberacao() {
           {canEdit && (
             <ImportButton
               table="tipos_deliberacao"
-              hint="Colunas: descricao, cor, icone, gera_prazo, permite_valor, permite_unidade_medida, ativo"
+              hint="Colunas: descricao, cor, icone, gera_prazo, prazo_facultativo, permite_valor, permite_unidade_medida, ativo"
               onDone={() => qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] })}
               mapRow={(r) => {
                 if (!r.descricao) return null;
@@ -354,6 +358,7 @@ function TiposDeliberacao() {
                   cor: r.cor ? String(r.cor) : "#1e40af",
                   icone: r.icone ? String(r.icone) : "gavel",
                   gera_prazo: b(r.gera_prazo),
+                  prazo_facultativo: b(r.prazo_facultativo),
                   permite_valor: b(r.permite_valor),
                   permite_unidade_medida: b(r.permite_unidade_medida),
                   ativo: b(r.ativo, true),
@@ -373,7 +378,8 @@ function TiposDeliberacao() {
                     <div><Label>Ícone (lucide)</Label><Input value={form.icone} onChange={(e) => setForm({ ...form, icone: e.target.value })} /></div>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2"><Switch checked={form.gera_prazo} onCheckedChange={(v) => setForm({ ...form, gera_prazo: v })} /><Label>Gera prazo</Label></div>
+                    <div className="flex items-center gap-2"><Switch checked={form.gera_prazo} onCheckedChange={(v) => setForm({ ...form, gera_prazo: v, prazo_facultativo: v ? form.prazo_facultativo : false })} /><Label>Gera prazo</Label></div>
+                    <div className="flex items-center gap-2 pl-6"><Switch checked={form.prazo_facultativo} onCheckedChange={(v) => setForm({ ...form, prazo_facultativo: v })} disabled={!form.gera_prazo} /><Label className={form.gera_prazo ? "" : "opacity-50"}>Prazo facultativo (não obrigatório ao cadastrar)</Label></div>
                     <div className="flex items-center gap-2"><Switch checked={form.permite_valor} onCheckedChange={(v) => setForm({ ...form, permite_valor: v })} /><Label>Permite valor</Label></div>
                     <div className="flex items-center gap-2"><Switch checked={form.permite_unidade_medida} onCheckedChange={(v) => setForm({ ...form, permite_unidade_medida: v })} /><Label>Permite unidade de medida</Label></div>
                     <div className="flex items-center gap-2"><Switch checked={form.ativo ?? true} onCheckedChange={(v) => setForm({ ...form, ativo: v })} /><Label>Ativo</Label></div>
@@ -391,7 +397,7 @@ function TiposDeliberacao() {
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.descricao}</TableCell>
                 <TableCell className="space-x-1">
-                  {t.gera_prazo && <Badge variant="outline">Prazo</Badge>}
+                  {t.gera_prazo && <Badge variant="outline">{t.prazo_facultativo ? "Prazo (opcional)" : "Prazo"}</Badge>}
                   {t.permite_valor && <Badge variant="outline">Valor</Badge>}
                   {t.permite_unidade_medida && <Badge variant="outline">Unidade</Badge>}
                 </TableCell>
@@ -740,5 +746,201 @@ function Processos() {
         </Table>
       </CardContent>
     </Card>
+  );
+}
+
+function StatusMonitoramento() {
+  const qc = useQueryClient();
+  const { hasRole } = useAuth();
+  const canEdit = hasRole("admin");
+
+  const { data } = useQuery({
+    queryKey: ["status_monitoramento_options"],
+    queryFn: async () => (await (supabase as any).from("status_monitoramento_options").select("*").order("ordem")).data ?? [],
+  });
+
+  const update = async (codigo: string, patch: any) => {
+    const { error } = await (supabase as any).from("status_monitoramento_options").update(patch).eq("codigo", codigo);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["status_monitoramento_options"] });
+  };
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-4 space-y-3">
+        <p className="text-xs text-muted-foreground">Status disponíveis para o monitoramento das deliberações. O código é fixo (vinculado ao sistema); descrição, ordem e cor são editáveis.</p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Código</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead className="w-[80px]">Ordem</TableHead>
+              <TableHead className="w-[80px]">Cor</TableHead>
+              <TableHead className="w-[100px]">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(data ?? []).map((s: any) => (
+              <TableRow key={s.codigo}>
+                <TableCell className="font-mono text-xs">{s.codigo}</TableCell>
+                <TableCell>
+                  {canEdit ? (
+                    <Input defaultValue={s.descricao} onBlur={(e) => e.target.value !== s.descricao && update(s.codigo, { descricao: e.target.value })} />
+                  ) : s.descricao}
+                </TableCell>
+                <TableCell>
+                  {canEdit ? (
+                    <Input type="number" defaultValue={s.ordem} className="w-20" onBlur={(e) => Number(e.target.value) !== s.ordem && update(s.codigo, { ordem: Number(e.target.value) })} />
+                  ) : s.ordem}
+                </TableCell>
+                <TableCell>
+                  {canEdit ? (
+                    <Input type="color" defaultValue={s.cor} className="h-8 w-12 p-0.5" onBlur={(e) => e.target.value !== s.cor && update(s.codigo, { cor: e.target.value })} />
+                  ) : <div className="h-5 w-5 rounded" style={{ backgroundColor: s.cor }} />}
+                </TableCell>
+                <TableCell>
+                  {canEdit ? <Switch checked={s.ativo} onCheckedChange={(v) => update(s.codigo, { ativo: v })} /> : <Badge variant={s.ativo ? "default" : "outline"}>{s.ativo ? "Ativo" : "Inativo"}</Badge>}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Tribunais() {
+  const qc = useQueryClient();
+  const { hasRole, tribunalId, isMaster, refreshRoles } = useAuth();
+  const isAdmin = hasRole("admin");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const emptyForm = { sigla: "", nome: "", esfera: "estadual", logo_url: "", ativo: true };
+  const [form, setForm] = useState<any>(emptyForm);
+  const [uploading, setUploading] = useState(false);
+
+  const { data } = useQuery({
+    queryKey: ["tribunais"],
+    queryFn: async () => (await (supabase as any).from("tribunais").select("*").order("sigla")).data ?? [],
+  });
+
+  const visible = (data ?? []).filter((t: any) => isMaster || !tribunalId || t.id === tribunalId);
+
+  const openNew = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (t: any) => { setEditing(t); setForm({ ...t, logo_url: t.logo_url ?? "" }); setOpen(true); };
+
+  const handleLogoUpload = async (file: File | null | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const path = `${form.sigla || editing?.sigla || "tmp"}_${Date.now()}_${file.name}`.replace(/\s+/g, "_");
+      const { error } = await supabase.storage.from("tribunal-logos").upload(path, file, { upsert: true });
+      if (error) { toast.error(error.message); return; }
+      const { data: pub } = supabase.storage.from("tribunal-logos").getPublicUrl(path);
+      setForm({ ...form, logo_url: pub.publicUrl });
+      toast.success("Logo enviada.");
+    } finally { setUploading(false); }
+  };
+
+  const save = async () => {
+    if (!form.sigla?.trim() || !form.nome?.trim()) { toast.error("Sigla e nome obrigatórios."); return; }
+    const payload = { sigla: form.sigla.trim(), nome: form.nome.trim(), esfera: form.esfera, logo_url: form.logo_url || null, ativo: form.ativo };
+    const { error } = editing
+      ? await (supabase as any).from("tribunais").update(payload).eq("id", editing.id)
+      : await (supabase as any).from("tribunais").insert(payload);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Salvo.");
+    setOpen(false); setEditing(null); setForm(emptyForm);
+    qc.invalidateQueries({ queryKey: ["tribunais"] });
+    refreshRoles();
+  };
+
+  return (
+    <Card className="mt-4">
+      <CardContent className="p-4 space-y-3">
+        <p className="text-xs text-muted-foreground">{isMaster ? "Você é usuário master e pode editar qualquer tribunal." : "Você visualiza apenas o seu tribunal. Edite a logo (brasão) e os dados de identificação."}</p>
+        <div className="flex justify-end gap-2">
+          <ExportButton rows={visible} filename="tribunais" />
+          {isMaster && (
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+              <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Novo Tribunal</Button></DialogTrigger>
+              <TribunalDialog editing={editing} form={form} setForm={setForm} uploading={uploading} onUpload={handleLogoUpload} onSave={save} onCancel={() => setOpen(false)} />
+            </Dialog>
+          )}
+          {!isMaster && isAdmin && tribunalId && (
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
+              <TribunalDialog editing={editing} form={form} setForm={setForm} uploading={uploading} onUpload={handleLogoUpload} onSave={save} onCancel={() => setOpen(false)} />
+            </Dialog>
+          )}
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[60px]">Logo</TableHead>
+              <TableHead>Sigla</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Esfera</TableHead>
+              <TableHead className="w-[80px]">Status</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visible.map((t: any) => (
+              <TableRow key={t.id}>
+                <TableCell>
+                  {t.logo_url ? <img src={t.logo_url} alt={t.sigla} className="h-8 w-8 object-contain" /> : <div className="h-8 w-8 rounded bg-muted" />}
+                </TableCell>
+                <TableCell className="font-mono text-xs">{t.sigla}</TableCell>
+                <TableCell>{t.nome}</TableCell>
+                <TableCell><Badge variant="outline">{t.esfera}</Badge></TableCell>
+                <TableCell><Badge variant={t.ativo ? "default" : "outline"}>{t.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
+                <TableCell>
+                  {(isMaster || (isAdmin && t.id === tribunalId)) && (
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TribunalDialog({ editing, form, setForm, uploading, onUpload, onSave, onCancel }: any) {
+  return (
+    <DialogContent>
+      <DialogHeader><DialogTitle>{editing ? "Editar" : "Novo"} Tribunal</DialogTitle></DialogHeader>
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Sigla *</Label><Input value={form.sigla} onChange={(e) => setForm({ ...form, sigla: e.target.value.toUpperCase() })} /></div>
+          <div>
+            <Label>Esfera</Label>
+            <Select value={form.esfera} onValueChange={(v) => setForm({ ...form, esfera: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="federal">Federal</SelectItem>
+                <SelectItem value="estadual">Estadual</SelectItem>
+                <SelectItem value="distrital">Distrital</SelectItem>
+                <SelectItem value="municipal_estadual">Municipal (estadual)</SelectItem>
+                <SelectItem value="municipal">Municipal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+        <div>
+          <Label>Logo (brasão)</Label>
+          <div className="flex items-center gap-3">
+            {form.logo_url && <img src={form.logo_url} alt="logo" className="h-12 w-12 object-contain border rounded" />}
+            <Input type="file" accept="image/*" disabled={uploading} onChange={(e) => onUpload(e.target.files?.[0])} />
+          </div>
+        </div>
+        <div className="flex items-center gap-2"><Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} /><Label>Ativo</Label></div>
+      </div>
+      <DialogFooter><Button variant="outline" onClick={onCancel}>Cancelar</Button><Button onClick={onSave}>Salvar</Button></DialogFooter>
+    </DialogContent>
   );
 }
