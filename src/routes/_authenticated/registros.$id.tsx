@@ -755,3 +755,78 @@ function CpfCnpjLookup({ value, onChange, onMatch, disabled, currentRegistroId }
     </div>
   );
 }
+
+function RegistroAnexos({ registroId, canEdit }: { registroId: string; canEdit: boolean }) {
+  const [anexos, setAnexos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("registros_decisao").select("anexos").eq("id", registroId).single();
+      setAnexos(((data as any)?.anexos as any[]) ?? []);
+      setLoading(false);
+    })();
+  }, [registroId]);
+
+  const persist = async (next: any[]) => {
+    setAnexos(next);
+    const { error } = await (supabase as any).from("registros_decisao").update({ anexos: next }).eq("id", registroId);
+    if (error) toast.error(error.message);
+  };
+
+  const handleUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const next = [...anexos];
+      for (const file of Array.from(files)) {
+        const path = `registros/${registroId}/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage.from("deliberacao-anexos").upload(path, file);
+        if (error) { toast.error(`Falha ao enviar ${file.name}: ${error.message}`); continue; }
+        next.push({ path, nome: file.name, tamanho: file.size, criado_em: new Date().toISOString() });
+      }
+      await persist(next);
+      toast.success("Arquivo(s) anexado(s).");
+    } finally { setUploading(false); }
+  };
+
+  const remove = async (path: string) => {
+    await supabase.storage.from("deliberacao-anexos").remove([path]);
+    await persist(anexos.filter((a) => a.path !== path));
+  };
+
+  const download = async (path: string) => {
+    const { data } = await supabase.storage.from("deliberacao-anexos").createSignedUrl(path, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm">5. Anexos do Registro (acórdão, decisão etc.)</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        {canEdit && (
+          <Input type="file" multiple disabled={uploading} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
+        )}
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Carregando…</p>
+        ) : anexos.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhum anexo.</p>
+        ) : (
+          <ul className="text-sm space-y-1">
+            {anexos.map((a) => (
+              <li key={a.path} className="flex items-center justify-between bg-background border border-border rounded px-2 py-1.5">
+                <button type="button" className="truncate text-left hover:underline flex-1" onClick={() => download(a.path)}>{a.nome}</button>
+                {canEdit && (
+                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => remove(a.path)}>
+                    <Trash2 className="h-3 w-3 text-destructive" />
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
