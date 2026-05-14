@@ -112,8 +112,9 @@ function CadastrosPage() {
 
 function UnidadesGestoras() {
   const qc = useQueryClient();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canDelete = hasRole("admin");
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
 
@@ -130,6 +131,14 @@ function UnidadesGestoras() {
     if (error) { toast.error(error.message); return; }
     toast.success("Salvo.");
     setOpen(false); setEdit(null);
+    qc.invalidateQueries({ queryKey: ["unidades_gestoras"] });
+  };
+
+  const remove = async (id: string, nome: string) => {
+    if (!confirm(`Excluir "${nome}"? Só será concluído se não houver registros associados.`)) return;
+    const { error } = await supabase.from("unidades_gestoras").delete().eq("id", id);
+    if (error) { toast.error("Não foi possível excluir: existem registros que utilizam esta unidade. Considere desativá-la."); return; }
+    toast.success("Excluído.");
     qc.invalidateQueries({ queryKey: ["unidades_gestoras"] });
   };
 
@@ -187,11 +196,18 @@ function UnidadesGestoras() {
                   <Badge variant={u.status ? "default" : "outline"}>{u.status ? "Ativa" : "Inativa"}</Badge>
                 </TableCell>
                 <TableCell>
-                  {canEdit && (
-                    <Button variant="ghost" size="icon" onClick={() => { setEdit(u); setOpen(true); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <div className="flex gap-1">
+                    {canEdit && (
+                      <Button variant="ghost" size="icon" onClick={() => { setEdit(u); setOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" onClick={() => remove(u.id, u.nome_unidade)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
