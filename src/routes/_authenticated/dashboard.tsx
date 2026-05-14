@@ -206,6 +206,65 @@ function DashboardPage() {
         ))}
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" /> Cobertura de Monitoramento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filtered.totalDeliberacoes === 0 ? (
+            <p className="text-sm text-muted-foreground">Sem deliberações cadastradas.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={filtered.gaugeData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="90%"
+                      startAngle={180}
+                      endAngle={0}
+                      innerRadius={70}
+                      outerRadius={110}
+                      paddingAngle={2}
+                    >
+                      {filtered.gaugeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-x-0 bottom-4 text-center">
+                  <div className="text-3xl font-bold text-success">{filtered.pctCobertura}%</div>
+                  <div className="text-xs text-muted-foreground">com monitoramento</div>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <span className="text-muted-foreground">Total de deliberações</span>
+                  <span className="font-semibold">{filtered.totalDeliberacoes}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-muted-foreground/40" /> Não iniciadas</span>
+                  <span className="font-medium">{filtered.naoIniciadas} ({filtered.totalDeliberacoes ? Math.round(filtered.naoIniciadas / filtered.totalDeliberacoes * 100) : 0}%)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-info" /> Em monitoramento</span>
+                  <span className="font-medium">{filtered.emMonitoramento} ({filtered.totalDeliberacoes ? Math.round(filtered.emMonitoramento / filtered.totalDeliberacoes * 100) : 0}%)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-success" /> Finalizadas</span>
+                  <span className="font-medium">{filtered.finalizadas} ({filtered.totalDeliberacoes ? Math.round(filtered.finalizadas / filtered.totalDeliberacoes * 100) : 0}%)</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader>
