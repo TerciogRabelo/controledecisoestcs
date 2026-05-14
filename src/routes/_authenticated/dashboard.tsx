@@ -120,11 +120,20 @@ function DashboardPage() {
       comMonitoramento,
       pctCobertura,
       gaugeData: [
-        { name: "Com monitoramento", value: comMonitoramento, color: "oklch(0.65 0.18 145)" },
+        { name: "Em monitoramento", value: emMon, color: "oklch(0.65 0.18 230)" },
+        { name: "Finalizadas", value: finalizadas, color: "oklch(0.65 0.18 145)" },
         { name: "Não iniciadas", value: naoIniciadas, color: "oklch(0.75 0.05 250)" },
       ].filter((x) => x.value > 0),
       porUnidade,
       porTipoDel,
+      porUnidadeTec: data.unidadesTec
+        .map((ut) => {
+          const dels = d.filter((x) => x.unidade_tecnica_id === ut.id);
+          const pendentes = dels.filter((x) => x.status_monitoramento === "nao_iniciado").length;
+          return { nome: (ut.sigla ?? ut.nome).slice(0, 20), total: dels.length, pendentes };
+        })
+        .filter((x) => x.total > 0)
+        .sort((a, b) => b.total - a.total),
       statusData: [
         { name: "Não iniciado", value: naoIniciadas },
         { name: "Em monitoramento", value: emMon },
