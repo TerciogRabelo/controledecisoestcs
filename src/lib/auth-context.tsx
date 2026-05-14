@@ -10,6 +10,9 @@ interface AuthState {
   roles: AppRole[];
   aprovado: boolean;
   unidadeTecnicaId: string | null;
+  tribunalId: string | null;
+  isMaster: boolean;
+  tribunal: { id: string; sigla: string; nome: string; logo_url: string | null } | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
