@@ -24,7 +24,7 @@ const ROLES: { v: "admin" | "secretaria" | "monitoramento" | "consulta"; label: 
 
 function UsuariosPage() {
   const qc = useQueryClient();
-  const { hasRole, user, isMaster, tribunalId } = useAuth();
+  const { hasRole, user, isMaster } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["usuarios"],
