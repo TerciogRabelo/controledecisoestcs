@@ -312,11 +312,16 @@ function RegistroFormPage() {
       </Card>
 
       {!isNew && registroId && (
+        <RegistroAnexos registroId={registroId} canEdit={canEdit} />
+      )}
+
+      {!isNew && registroId && (
         <DeliberacoesGrid
           registroId={registroId}
           numeroProcessoOrigem={form.numero_processo}
           tipos={lookups?.tiposDel ?? []}
           unidadesTec={lookups?.unidadesTec ?? []}
+          resultadosMon={lookups?.resultadosMon ?? []}
           deliberacoes={deliberacoes ?? []}
           onChange={refetchDel}
           canEdit={canEdit}
