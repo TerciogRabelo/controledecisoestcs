@@ -89,7 +89,10 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <Link to={item.url}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span className="flex-1">{item.title}</span>
+                      {item.url === "/avisos" && avisosCount > 0 && (
+                        <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">{avisosCount}</Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
