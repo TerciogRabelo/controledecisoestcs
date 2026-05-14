@@ -33,8 +33,32 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { signOut, user, hasRole, tribunal } = useAuth();
+  const { signOut, user, hasRole, isMaster, unidadeTecnicaId, tribunal } = useAuth();
   const isActive = (url: string) => path === url || path.startsWith(url + "/");
+
+  const restrictToUT = hasRole("monitoramento") && !hasRole("admin") && !isMaster;
+  const { data: avisosCount = 0 } = useQuery({
+    queryKey: ["avisos_count", restrictToUT ? unidadeTecnicaId : "all"],
+    queryFn: async () => {
+      let q = supabase
+        .from("deliberacoes")
+        .select("id, prazo_dias, data_inicio_prazo, monitoramento_fim, tipos_deliberacao(gera_prazo)")
+        .in("status_monitoramento", ["em_monitoramento", "vencido", "nao_cumprido", "parcialmente_cumprido", "nao_iniciado"] as any);
+      if (restrictToUT && unidadeTecnicaId) q = q.eq("unidade_tecnica_id", unidadeTecnicaId);
+      const { data } = await q;
+      let n = 0;
+      for (const d of (data ?? []) as any[]) {
+        if (d.tipos_deliberacao?.gera_prazo && d.prazo_dias && d.data_inicio_prazo) {
+          const fim = new Date(d.data_inicio_prazo + "T00:00:00");
+          fim.setDate(fim.getDate() + Number(d.prazo_dias));
+          if (diffDays(fim.toISOString().slice(0, 10)) <= 15) n++;
+        }
+        if (d.monitoramento_fim && diffDays(d.monitoramento_fim) <= 15) n++;
+      }
+      return n;
+    },
+    refetchInterval: 60_000,
+  });
 
   return (
     <Sidebar collapsible="icon">
