@@ -348,7 +348,7 @@ function TiposDeliberacao() {
           {canEdit && (
             <ImportButton
               table="tipos_deliberacao"
-              hint="Colunas: descricao, cor, icone, gera_prazo, permite_valor, permite_unidade_medida, ativo"
+              hint="Colunas: descricao, cor, icone, gera_prazo, prazo_facultativo, permite_valor, permite_unidade_medida, ativo"
               onDone={() => qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] })}
               mapRow={(r) => {
                 if (!r.descricao) return null;
@@ -358,6 +358,7 @@ function TiposDeliberacao() {
                   cor: r.cor ? String(r.cor) : "#1e40af",
                   icone: r.icone ? String(r.icone) : "gavel",
                   gera_prazo: b(r.gera_prazo),
+                  prazo_facultativo: b(r.prazo_facultativo),
                   permite_valor: b(r.permite_valor),
                   permite_unidade_medida: b(r.permite_unidade_medida),
                   ativo: b(r.ativo, true),
@@ -377,7 +378,8 @@ function TiposDeliberacao() {
                     <div><Label>Ícone (lucide)</Label><Input value={form.icone} onChange={(e) => setForm({ ...form, icone: e.target.value })} /></div>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2"><Switch checked={form.gera_prazo} onCheckedChange={(v) => setForm({ ...form, gera_prazo: v })} /><Label>Gera prazo</Label></div>
+                    <div className="flex items-center gap-2"><Switch checked={form.gera_prazo} onCheckedChange={(v) => setForm({ ...form, gera_prazo: v, prazo_facultativo: v ? form.prazo_facultativo : false })} /><Label>Gera prazo</Label></div>
+                    <div className="flex items-center gap-2 pl-6"><Switch checked={form.prazo_facultativo} onCheckedChange={(v) => setForm({ ...form, prazo_facultativo: v })} disabled={!form.gera_prazo} /><Label className={form.gera_prazo ? "" : "opacity-50"}>Prazo facultativo (não obrigatório ao cadastrar)</Label></div>
                     <div className="flex items-center gap-2"><Switch checked={form.permite_valor} onCheckedChange={(v) => setForm({ ...form, permite_valor: v })} /><Label>Permite valor</Label></div>
                     <div className="flex items-center gap-2"><Switch checked={form.permite_unidade_medida} onCheckedChange={(v) => setForm({ ...form, permite_unidade_medida: v })} /><Label>Permite unidade de medida</Label></div>
                     <div className="flex items-center gap-2"><Switch checked={form.ativo ?? true} onCheckedChange={(v) => setForm({ ...form, ativo: v })} /><Label>Ativo</Label></div>
