@@ -504,9 +504,11 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm">Deliberações ({deliberacoes.length})</CardTitle>
-        {canEdit && (
+        {(canCreateDeliberacao || canEditMonitoramento) && (
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
-            <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova</Button></DialogTrigger>
+            {canCreateDeliberacao && (
+              <DialogTrigger asChild><Button size="sm" onClick={openNew}><Plus className="h-4 w-4" /> Nova</Button></DialogTrigger>
+            )}
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{editing ? "Editar Deliberação" : "Nova Deliberação"}</DialogTitle></DialogHeader>
 
