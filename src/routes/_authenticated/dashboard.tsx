@@ -27,7 +27,6 @@ const STATUS_LABELS: Record<string, string> = {
   cancelada: "Cancelada",
 };
 
-const FINALIZADOS = new Set(["cumprida", "descumprida", "vencida", "cancelada"]);
 
 function DashboardPage() {
   const [filtroUnidade, setFiltroUnidade] = useState<string>("__all");
