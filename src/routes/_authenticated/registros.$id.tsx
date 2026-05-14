@@ -6,28 +6,27 @@ function ProcessoInput({ value, onChange, disabled }: { value: string; onChange:
   const [suggestions, setSuggestions] = useState<{ value: string; label: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const fetchFn = useServerFn(fetchFonteExterna);
-
-  const { data: fonte } = useQuery({
-    queryKey: ["fonte_processos"],
-    queryFn: async () => {
-      const { data } = await supabase.from("fontes_dados").select("id").eq("tipo_alvo", "processos").eq("ativo", true).limit(1).maybeSingle();
-      return data;
-    },
-  });
 
   useEffect(() => {
-    if (!fonte?.id || value.length < 3) { setSuggestions([]); return; }
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 3) { setSuggestions([]); setOpen(false); return; }
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const res: any = await fetchFn({ data: { fonteId: fonte.id, query: value } });
-        setSuggestions(res.items ?? []);
-        setOpen((res.items ?? []).length > 0);
+        const { data } = await supabase
+          .from("processos")
+          .select("numero, descricao")
+          .eq("ativo", true)
+          .ilike("numero", `%${value}%`)
+          .order("numero", { ascending: true })
+          .limit(10);
+        const items = (data ?? []).map((p) => ({ value: p.numero, label: p.descricao ?? "" }));
+        setSuggestions(items);
+        setOpen(items.length > 0);
       } finally { setLoading(false); }
-    }, 350);
+    }, 250);
     return () => clearTimeout(t);
-  }, [value, fonte?.id]);
+  }, [value]);
 
   return (
     <div className="relative">
