@@ -457,7 +457,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
 
   const submit = async () => {
     if (!form.tipo_deliberacao_id) { toast.error("Selecione o tipo de deliberação."); return; }
-    if (tipoSel?.gera_prazo) {
+    if (tipoSel?.gera_prazo && !tipoSel?.prazo_facultativo) {
       if (!form.data_inicio_prazo) { toast.error("Informe a data de início do prazo."); return; }
       if (!form.prazo_dias) { toast.error("Informe o prazo em dias."); return; }
     }
