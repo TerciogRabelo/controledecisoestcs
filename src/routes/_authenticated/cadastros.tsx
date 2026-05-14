@@ -907,6 +907,13 @@ function StatusMonitoramento() {
                 <TableCell>
                   {canEdit ? <Switch checked={s.ativo} onCheckedChange={(v) => update(s.codigo, { ativo: v })} /> : <Badge variant={s.ativo ? "default" : "outline"}>{s.ativo ? "Ativo" : "Inativo"}</Badge>}
                 </TableCell>
+                {canEdit && (
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => remove(s.codigo)} title="Excluir">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
