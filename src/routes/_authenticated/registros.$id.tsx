@@ -373,7 +373,7 @@ function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" |
   return { label: `${diff}d restantes`, tone: "ok" };
 }
 
-function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, deliberacoes, onChange, canEdit }: {
+function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, deliberacoes, onChange, canEdit, canCreateDeliberacao, canEditMonitoramento, userUnidadeTecnicaId }: {
   registroId: string;
   numeroProcessoOrigem: string;
   tipos: any[];
@@ -382,6 +382,9 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
   deliberacoes: any[];
   onChange: () => void;
   canEdit: boolean;
+  canCreateDeliberacao: boolean;
+  canEditMonitoramento: boolean;
+  userUnidadeTecnicaId: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
