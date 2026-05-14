@@ -72,7 +72,7 @@ export type Database = {
           resposta_gestor: string | null
           resultado_monitoramento: string | null
           resultado_monitoramento_id: string | null
-          status_monitoramento: Database["public"]["Enums"]["status_monitoramento"]
+          status_monitoramento: string
           tipo_deliberacao_id: string | null
           unidade_medida: string | null
           unidade_tecnica_id: string | null
@@ -102,7 +102,7 @@ export type Database = {
           resposta_gestor?: string | null
           resultado_monitoramento?: string | null
           resultado_monitoramento_id?: string | null
-          status_monitoramento?: Database["public"]["Enums"]["status_monitoramento"]
+          status_monitoramento?: string
           tipo_deliberacao_id?: string | null
           unidade_medida?: string | null
           unidade_tecnica_id?: string | null
@@ -132,7 +132,7 @@ export type Database = {
           resposta_gestor?: string | null
           resultado_monitoramento?: string | null
           resultado_monitoramento_id?: string | null
-          status_monitoramento?: Database["public"]["Enums"]["status_monitoramento"]
+          status_monitoramento?: string
           tipo_deliberacao_id?: string | null
           unidade_medida?: string | null
           unidade_tecnica_id?: string | null
