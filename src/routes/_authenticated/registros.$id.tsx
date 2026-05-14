@@ -368,11 +368,12 @@ function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" |
   return { label: `${diff}d restantes`, tone: "ok" };
 }
 
-function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, deliberacoes, onChange, canEdit }: {
+function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, deliberacoes, onChange, canEdit }: {
   registroId: string;
   numeroProcessoOrigem: string;
   tipos: any[];
   unidadesTec: any[];
+  resultadosMon: any[];
   deliberacoes: any[];
   onChange: () => void;
   canEdit: boolean;
