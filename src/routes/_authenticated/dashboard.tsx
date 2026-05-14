@@ -276,6 +276,31 @@ function DashboardPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="h-4 w-4" /> Deliberações por Unidade Técnica
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Total de deliberações vinculadas a cada unidade técnica e quantas seguem pendentes (não iniciadas).</p>
+        </CardHeader>
+        <CardContent>
+          {filtered.porUnidadeTec.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma deliberação vinculada a unidades técnicas ainda.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={filtered.porUnidadeTec}>
+                <XAxis dataKey="nome" fontSize={11} tick={{ fill: "currentColor" }} />
+                <YAxis fontSize={11} tick={{ fill: "currentColor" }} allowDecimals={false} />
+                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="total" name="Total" fill="oklch(0.45 0.15 250)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="pendentes" name="Pendentes (não iniciadas)" fill="oklch(0.7 0.18 60)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader>
