@@ -715,7 +715,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     <TableCell>
                       {(() => {
                         const canEditRow = canEdit || (canEditMonitoramento && d.unidade_tecnica_id && d.unidade_tecnica_id === userUnidadeTecnicaId);
-                        const canDeleteRow = hasAnyRole(["admin"]) || canEdit; /* só admin/secretaria veem delete */
+                        const canDeleteRow = canEdit; /* RLS permite apenas admin de fato */
                         if (!canEditRow) return null;
                         return (
                           <div className="flex gap-1">
