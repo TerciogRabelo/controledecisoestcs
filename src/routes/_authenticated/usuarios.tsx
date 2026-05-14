@@ -123,11 +123,15 @@ function UsuariosPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Carregando…</TableCell></TableRow>
               ) : profiles.map((p: any) => {
                 const role = getCurrentRole(p.id);
                 const isMe = p.id === user?.id;
                 const isMonit = role === "monitoramento";
+                const tribunalLabel = (() => {
+                  const t = tribunais.find((x: any) => x.id === p.tribunal_id);
+                  return t ? `${t.sigla} — ${t.nome}` : null;
+                })();
                 return (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.nome} {isMe && <Badge variant="outline" className="ml-2">você</Badge>}</TableCell>
@@ -137,7 +141,7 @@ function UsuariosPage() {
                         ? <Badge className="bg-success/15 text-success border-success/30">Aprovado</Badge>
                         : <Badge variant="outline" className="border-warning/40 text-warning">Pendente</Badge>}
                     </TableCell>
-                    <TableCell><Badge>{role}</Badge></TableCell>
+                    <TableCell><Badge>{role}</Badge>{p.is_master && <Badge variant="outline" className="ml-1 border-primary/40 text-primary">master</Badge>}</TableCell>
                     <TableCell>
                       <Select value={role} onValueChange={(v) => setRole(p.id, v as any)} disabled={isMe || !p.aprovado}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -145,6 +149,20 @@ function UsuariosPage() {
                           {ROLES.map((r) => <SelectItem key={r.v} value={r.v}>{r.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                    </TableCell>
+                    <TableCell>
+                      {isMaster ? (
+                        <Select value={p.tribunal_id ?? ""} onValueChange={(v) => setTribunal(p.id, v || null)}>
+                          <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                          <SelectContent>
+                            {tribunais.map((t: any) => (
+                              <SelectItem key={t.id} value={t.id}>{t.sigla} — {t.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-xs">{tribunalLabel ?? <span className="text-muted-foreground">—</span>}</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {isMonit ? (
@@ -164,6 +182,15 @@ function UsuariosPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isMaster && !isMe ? (
+                        <Switch checked={!!p.is_master} onCheckedChange={(v) => setMaster(p.id, v)} />
+                      ) : p.is_master ? (
+                        <Badge variant="outline" className="border-primary/40 text-primary">sim</Badge>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
