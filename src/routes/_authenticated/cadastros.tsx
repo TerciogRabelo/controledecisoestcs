@@ -397,7 +397,7 @@ function TiposDeliberacao() {
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.descricao}</TableCell>
                 <TableCell className="space-x-1">
-                  {t.gera_prazo && <Badge variant="outline">Prazo</Badge>}
+                  {t.gera_prazo && <Badge variant="outline">{t.prazo_facultativo ? "Prazo (opcional)" : "Prazo"}</Badge>}
                   {t.permite_valor && <Badge variant="outline">Valor</Badge>}
                   {t.permite_unidade_medida && <Badge variant="outline">Unidade</Badge>}
                 </TableCell>
