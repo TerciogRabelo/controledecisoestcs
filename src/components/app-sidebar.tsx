@@ -7,6 +7,9 @@ import {
 import { LayoutDashboard, FileStack, Building2, Users, ShieldCheck, LogOut, Bell } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -14,6 +17,13 @@ const mainItems = [
   { title: "Avisos", url: "/avisos", icon: Bell },
   { title: "Cadastros Básicos", url: "/cadastros", icon: Building2 },
 ];
+
+const TODAY = new Date().toISOString().slice(0, 10);
+function diffDays(target: string): number {
+  const t = new Date(target + "T00:00:00").getTime();
+  const h = new Date(TODAY + "T00:00:00").getTime();
+  return Math.ceil((t - h) / (1000 * 60 * 60 * 24));
+}
 
 const adminItems = [
   { title: "Usuários", url: "/usuarios", icon: Users },
