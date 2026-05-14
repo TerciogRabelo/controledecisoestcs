@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, FileStack } from "lucide-react";
+import { Plus, Search, FileStack, Pencil, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { formatDate } from "@/lib/masks";
 import { useAuth } from "@/lib/auth-context";
@@ -79,25 +79,35 @@ function RegistrosListPage() {
               <TableHead>Gestor</TableHead>
               <TableHead className="text-center">Deliberações</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="w-[80px] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Carregando…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Carregando…</TableCell></TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={8} className="text-center py-12">
                   <FileStack className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">Nenhum registro encontrado.</p>
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((r) => (
-                <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50">
+              filtered.map((r) => {
+                const semDeliberacao = !r.quantidade_deliberacoes || r.quantidade_deliberacoes === 0;
+                return (
+                <TableRow key={r.id} className="hover:bg-muted/50">
                   <TableCell className="font-mono text-sm">
-                    <Link to="/registros/$id" params={{ id: r.id }} className="text-primary hover:underline">
-                      {r.numero_processo}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      {semDeliberacao && (
+                        <span title="Registro sem deliberação" className="text-yellow-500">
+                          <AlertTriangle className="h-4 w-4" />
+                        </span>
+                      )}
+                      <Link to="/registros/$id" params={{ id: r.id }} className="text-primary hover:underline">
+                        {r.numero_processo}
+                      </Link>
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm">{r.numero_decisao ?? "—"}</TableCell>
                   <TableCell className="text-sm">{formatDate(r.data_decisao)}</TableCell>
@@ -117,8 +127,16 @@ function RegistrosListPage() {
                       {r.status_registro}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild variant="ghost" size="icon" title={canEdit ? "Editar" : "Visualizar"}>
+                      <Link to="/registros/$id" params={{ id: r.id }}>
+                        <Pencil className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>
