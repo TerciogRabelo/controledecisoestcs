@@ -292,6 +292,7 @@ export type Database = {
           email: string
           id: string
           nome: string
+          unidade_tecnica_id: string | null
           updated_at: string
         }
         Insert: {
@@ -301,6 +302,7 @@ export type Database = {
           email: string
           id: string
           nome: string
+          unidade_tecnica_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -310,9 +312,18 @@ export type Database = {
           email?: string
           id?: string
           nome?: string
+          unidade_tecnica_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_unidade_tecnica_id_fkey"
+            columns: ["unidade_tecnica_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_tecnicas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       registros_decisao: {
         Row: {
@@ -594,6 +605,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_user_unidade_tecnica: { Args: never; Returns: string }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
