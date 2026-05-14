@@ -326,6 +326,7 @@ function RegistroFormPage() {
           tipos={lookups?.tiposDel ?? []}
           unidadesTec={lookups?.unidadesTec ?? []}
           resultadosMon={lookups?.resultadosMon ?? []}
+          statusOptions={lookups?.statusOptions ?? []}
           deliberacoes={deliberacoes ?? []}
           onChange={refetchDel}
           canEdit={canEdit}
