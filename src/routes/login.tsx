@@ -175,12 +175,15 @@ function LoginPage() {
           <div className="w-full max-w-md">
             {/* mobile brand */}
             <div className="flex flex-col items-center mb-8 lg:hidden">
-              <img src={logo} alt="Logo Decisum" className="h-16 w-16 mb-3" width={64} height={64} />
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Decisum</h1>
+              <div className="relative mb-3">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary to-gold rounded-2xl blur-lg opacity-40" />
+                <img src={logo} alt="Logo Decisum" className="relative h-16 w-16" width={64} height={64} />
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">Decisum</h1>
               <p className="text-sm text-muted-foreground">Gestão de Decisões</p>
             </div>
 
-            <Card className="border-border/60 shadow-2xl shadow-primary/5 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+            <Card className="border border-primary/15 shadow-2xl shadow-primary/10 backdrop-blur-xl supports-[backdrop-filter]:bg-card/70 ring-1 ring-white/5">
               <CardHeader className="space-y-1">
                 <CardTitle className="text-xl">Acesso à plataforma</CardTitle>
                 <CardDescription>Entre com sua conta institucional ou solicite cadastro.</CardDescription>
