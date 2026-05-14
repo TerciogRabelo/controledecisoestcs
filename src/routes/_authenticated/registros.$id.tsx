@@ -327,6 +327,9 @@ function RegistroFormPage() {
           deliberacoes={deliberacoes ?? []}
           onChange={refetchDel}
           canEdit={canEdit}
+          canCreateDeliberacao={canCreateDeliberacao}
+          canEditMonitoramento={canEditMonitoramento}
+          userUnidadeTecnicaId={unidadeTecnicaId}
         />
       )}
     </div>
