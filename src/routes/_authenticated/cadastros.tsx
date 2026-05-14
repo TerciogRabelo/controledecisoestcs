@@ -82,14 +82,16 @@ export const Route = createFileRoute("/_authenticated/cadastros")({
 function CadastrosPage() {
   return (
     <Tabs defaultValue="unidades">
-      <TabsList>
+      <TabsList className="flex-wrap h-auto">
         <TabsTrigger value="unidades">Unidades Gestoras</TabsTrigger>
         <TabsTrigger value="orgaos">Órgãos Julgadores</TabsTrigger>
         <TabsTrigger value="tipos_decisao">Tipos de Decisão</TabsTrigger>
         <TabsTrigger value="tipos_julgamento">Tipos de Julgamento</TabsTrigger>
         <TabsTrigger value="tipos_deliberacao">Tipos de Deliberação</TabsTrigger>
-       <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
+        <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
         <TabsTrigger value="resultados_monitoramento">Resultados Monitoramento</TabsTrigger>
+        <TabsTrigger value="status_monitoramento">Status Monitoramento</TabsTrigger>
+        <TabsTrigger value="tribunais">Tribunais</TabsTrigger>
         <TabsTrigger value="processos">Processos</TabsTrigger>
         <TabsTrigger value="fontes">Fontes Externas (API)</TabsTrigger>
       </TabsList>
@@ -100,6 +102,8 @@ function CadastrosPage() {
       <TabsContent value="tipos_deliberacao"><TiposDeliberacao /></TabsContent>
       <TabsContent value="unidades_tecnicas"><UnidadesTecnicas /></TabsContent>
       <TabsContent value="resultados_monitoramento"><SimpleCrud table="resultados_monitoramento" label="Resultado de Monitoramento" /></TabsContent>
+      <TabsContent value="status_monitoramento"><StatusMonitoramento /></TabsContent>
+      <TabsContent value="tribunais"><Tribunais /></TabsContent>
       <TabsContent value="processos"><Processos /></TabsContent>
       <TabsContent value="fontes"><FontesDados /></TabsContent>
     </Tabs>
