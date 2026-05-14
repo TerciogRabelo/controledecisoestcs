@@ -98,19 +98,35 @@ function DashboardPage() {
       })
       .sort((a, b) => (b.data_decisao ?? "").localeCompare(a.data_decisao ?? ""));
 
+    const naoIniciadas = statusCount["nao_iniciado"] ?? 0;
+    const emMon = statusCount["em_monitoramento"] ?? 0;
+    const finalizadas = (statusCount["cumprida"] ?? 0) + (statusCount["descumprida"] ?? 0) + (statusCount["vencida"] ?? 0) + (statusCount["cancelada"] ?? 0);
+    const totalDel = d.length;
+    const comMonitoramento = emMon + finalizadas;
+    const pctCobertura = totalDel > 0 ? Math.round((comMonitoramento / totalDel) * 100) : 0;
+
     return {
       totalRegistros: r.length,
-      totalDeliberacoes: d.length,
+      totalDeliberacoes: totalDel,
       comDeliberacao: r.filter((x) => x.houve_deliberacao).length,
       semDeliberacao: r.filter((x) => !x.houve_deliberacao).length,
-      emMonitoramento: statusCount["em_monitoramento"] ?? 0,
+      naoIniciadas,
+      emMonitoramento: emMon,
       cumpridas: statusCount["cumprida"] ?? 0,
       descumpridas: statusCount["descumprida"] ?? 0,
       vencidas: statusCount["vencida"] ?? 0,
+      finalizadas,
+      comMonitoramento,
+      pctCobertura,
+      gaugeData: [
+        { name: "Com monitoramento", value: comMonitoramento, color: "oklch(0.65 0.18 145)" },
+        { name: "Não iniciadas", value: naoIniciadas, color: "oklch(0.75 0.05 250)" },
+      ].filter((x) => x.value > 0),
       porUnidade,
       porTipoDel,
       statusData: [
-        { name: "Em monitoramento", value: statusCount["em_monitoramento"] ?? 0 },
+        { name: "Não iniciado", value: naoIniciadas },
+        { name: "Em monitoramento", value: emMon },
         { name: "Cumpridas", value: statusCount["cumprida"] ?? 0 },
         { name: "Descumpridas", value: statusCount["descumprida"] ?? 0 },
         { name: "Vencidas", value: statusCount["vencida"] ?? 0 },
