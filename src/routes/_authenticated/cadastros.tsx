@@ -312,7 +312,7 @@ function TiposDeliberacao() {
   const canEdit = hasAnyRole(["admin", "secretaria"]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const emptyForm = { cor: "#1e40af", icone: "gavel", gera_prazo: false, permite_valor: false, permite_unidade_medida: false, ativo: true };
+  const emptyForm = { cor: "#1e40af", icone: "gavel", gera_prazo: false, prazo_facultativo: false, permite_valor: false, permite_unidade_medida: false, ativo: true };
   const [form, setForm] = useState<any>(emptyForm);
 
   const { data } = useQuery({
