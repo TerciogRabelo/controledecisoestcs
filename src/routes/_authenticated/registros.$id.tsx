@@ -523,10 +523,10 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Deliberação</p>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Tipo de Deliberação *">
-                    <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} />
+                    <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} disabled={delibDisabled} />
                   </Field>
                   <Field label="Status">
-                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })}>
+                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })} disabled={delibDisabled}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {Object.entries(STATUS_LABELS).map(([k, v]) => (
@@ -537,32 +537,32 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   </Field>
                   <div className="col-span-2">
                     <Field label="Descrição">
-                      <Textarea value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} />
+                      <Textarea value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} disabled={delibDisabled} />
                     </Field>
                   </div>
                   {tipoSel?.gera_prazo && (
                     <>
                       <Field label="Data de Início do Prazo *">
-                        <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} />
+                        <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} disabled={delibDisabled} />
                       </Field>
                       <Field label="Prazo (dias) *">
-                        <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} />
+                        <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} disabled={delibDisabled} />
                       </Field>
                     </>
                   )}
                   {tipoSel?.permite_valor && (
                     <Field label="Valor (R$)">
-                      <Input type="number" step="0.01" value={form.valor ?? ""} onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })} />
+                      <Input type="number" step="0.01" value={form.valor ?? ""} onChange={(e) => setForm({ ...form, valor: e.target.value ? Number(e.target.value) : null })} disabled={delibDisabled} />
                     </Field>
                   )}
                   {tipoSel?.permite_unidade_medida && (
                     <Field label="Unidade de Medida">
-                      <Input value={form.unidade_medida ?? ""} onChange={(e) => setForm({ ...form, unidade_medida: e.target.value })} />
+                      <Input value={form.unidade_medida ?? ""} onChange={(e) => setForm({ ...form, unidade_medida: e.target.value })} disabled={delibDisabled} />
                     </Field>
                   )}
                   <div className="col-span-2">
                     <Field label="Observação">
-                      <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} />
+                      <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} disabled={delibDisabled} />
                     </Field>
                   </div>
                 </div>
@@ -577,10 +577,11 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       value={form.unidade_tecnica_id ?? null}
                       onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
                       options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
+                      disabled={monitDisabled}
                     />
                   </Field>
                   <Field label="Tipo de Monitoramento">
-                    <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })}>
+                    <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })} disabled={monitDisabled}>
                       <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="processual">Processual</SelectItem>
