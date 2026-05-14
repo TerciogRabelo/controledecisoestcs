@@ -376,12 +376,13 @@ function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" |
   return { label: `${diff}d restantes`, tone: "ok" };
 }
 
-function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, deliberacoes, onChange, canEdit, canCreateDeliberacao, canEditMonitoramento, userUnidadeTecnicaId }: {
+function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, statusOptions, deliberacoes, onChange, canEdit, canCreateDeliberacao, canEditMonitoramento, userUnidadeTecnicaId }: {
   registroId: string;
   numeroProcessoOrigem: string;
   tipos: any[];
   unidadesTec: any[];
   resultadosMon: any[];
+  statusOptions: any[];
   deliberacoes: any[];
   onChange: () => void;
   canEdit: boolean;
@@ -391,7 +392,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const emptyForm = { status_monitoramento: "em_monitoramento", deliberacao_solidaria: false, anexos: [] as any[] };
+  const emptyForm = { status_monitoramento: "nao_iniciado", deliberacao_solidaria: false, anexos: [] as any[] };
   const [form, setForm] = useState<any>(emptyForm);
   const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
