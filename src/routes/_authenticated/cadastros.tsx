@@ -242,9 +242,12 @@ function UnidadeForm({ initial, onSave, onCancel }: any) {
 
 function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_decisao" | "tipos_julgamento" | "resultados_monitoramento"; label: string }) {
   const qc = useQueryClient();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canDelete = hasRole("admin");
   const [novo, setNovo] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
 
   const { data } = useQuery({
     queryKey: [table],
@@ -259,8 +262,28 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
     qc.invalidateQueries({ queryKey: [table] });
   };
 
+  const saveEdit = async (id: string) => {
+    if (!editingValue.trim()) { toast.error("Descrição obrigatória."); return; }
+    const { error } = await supabase.from(table).update({ descricao: editingValue.trim() }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setEditingId(null); setEditingValue("");
+    toast.success("Atualizado.");
+    qc.invalidateQueries({ queryKey: [table] });
+  };
+
   const toggle = async (id: string, ativo: boolean) => {
     await supabase.from(table).update({ ativo: !ativo }).eq("id", id);
+    qc.invalidateQueries({ queryKey: [table] });
+  };
+
+  const remove = async (id: string, descricao: string) => {
+    if (!confirm(`Excluir "${descricao}"? Esta ação só será concluída se não houver registros associados.`)) return;
+    const { error } = await supabase.from(table).delete().eq("id", id);
+    if (error) {
+      toast.error("Não foi possível excluir: existem registros que utilizam este item. Considere desativá-lo.");
+      return;
+    }
+    toast.success("Excluído.");
     qc.invalidateQueries({ queryKey: [table] });
   };
 
@@ -285,17 +308,39 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
           </div>
         )}
         <Table>
-          <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead className="w-[100px]">Status</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[110px]"></TableHead></TableRow></TableHeader>
           <TableBody>
             {(data ?? []).map((r: any) => (
               <TableRow key={r.id}>
-                <TableCell>{r.descricao}</TableCell>
+                <TableCell>
+                  {editingId === r.id ? (
+                    <div className="flex gap-2">
+                      <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit(r.id)} autoFocus />
+                      <Button size="sm" onClick={() => saveEdit(r.id)}>Salvar</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditingValue(""); }}>Cancelar</Button>
+                    </div>
+                  ) : r.descricao}
+                </TableCell>
                 <TableCell>
                   {canEdit ? (
                     <Switch checked={r.ativo} onCheckedChange={() => toggle(r.id, r.ativo)} />
                   ) : (
                     <Badge variant={r.ativo ? "default" : "outline"}>{r.ativo ? "Ativo" : "Inativo"}</Badge>
                   )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {canEdit && editingId !== r.id && (
+                      <Button variant="ghost" size="icon" onClick={() => { setEditingId(r.id); setEditingValue(r.descricao); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" onClick={() => remove(r.id, r.descricao)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
