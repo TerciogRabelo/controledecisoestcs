@@ -713,16 +713,23 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </TableCell>
                     <TableCell className="text-sm">{formatDate(d.criado_em?.slice(0, 10))}</TableCell>
                     <TableCell>
-                      {canEdit && (
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      )}
+                      {(() => {
+                        const canEditRow = canEdit || (canEditMonitoramento && d.unidade_tecnica_id && d.unidade_tecnica_id === userUnidadeTecnicaId);
+                        const canDeleteRow = hasAnyRole(["admin"]) || canEdit; /* só admin/secretaria veem delete */
+                        if (!canEditRow) return null;
+                        return (
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {canDeleteRow && (
+                              <Button variant="ghost" size="icon" onClick={() => remove(d.id)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                   </TableRow>
                 );
