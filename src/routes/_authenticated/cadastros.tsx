@@ -80,6 +80,15 @@ export const Route = createFileRoute("/_authenticated/cadastros")({
 });
 
 function CadastrosPage() {
+  const { hasRole } = useAuth();
+  if (!hasRole("admin")) {
+    return (
+      <div className="max-w-md mx-auto mt-10 text-center space-y-2 border rounded-lg p-8 bg-background">
+        <h2 className="text-lg font-semibold">Acesso restrito</h2>
+        <p className="text-sm text-muted-foreground">Apenas administradores podem acessar os Cadastros Básicos.</p>
+      </div>
+    );
+  }
   return (
     <Tabs defaultValue="unidades">
       <TabsList className="flex-wrap h-auto">

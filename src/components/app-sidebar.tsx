@@ -4,7 +4,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, FileStack, Building2, Users, ShieldCheck, LogOut, Bell } from "lucide-react";
+import { LayoutDashboard, Gavel, Users, ShieldCheck, LogOut, Bell, Database } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Registros de Decisão", url: "/registros", icon: FileStack },
+  { title: "Registros de Decisão", url: "/registros", icon: Gavel },
   { title: "Avisos", url: "/avisos", icon: Bell },
-  { title: "Cadastros Básicos", url: "/cadastros", icon: Building2 },
 ];
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -26,6 +25,7 @@ function diffDays(target: string): number {
 }
 
 const adminItems = [
+  { title: "Cadastros Básicos", url: "/cadastros", icon: Database },
   { title: "Usuários", url: "/usuarios", icon: Users },
 ];
 
