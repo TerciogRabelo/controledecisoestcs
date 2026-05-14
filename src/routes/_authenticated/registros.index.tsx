@@ -1,23 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, FileStack, Pencil, AlertTriangle } from "lucide-react";
+import { Plus, Search, FileStack, Pencil, AlertTriangle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { formatDate } from "@/lib/masks";
 import { useAuth } from "@/lib/auth-context";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/registros/")({
   component: RegistrosListPage,
 });
 
 function RegistrosListPage() {
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const isAdmin = hasRole("admin");
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
 
   const { data, isLoading } = useQuery({
@@ -128,11 +131,31 @@ function RegistrosListPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button asChild variant="ghost" size="icon" title={canEdit ? "Editar" : "Visualizar"}>
-                      <Link to="/registros/$id" params={{ id: r.id }}>
-                        <Pencil className="h-4 w-4" />
-                      </Link>
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button asChild variant="ghost" size="icon" title={canEdit ? "Editar" : "Visualizar"}>
+                        <Link to="/registros/$id" params={{ id: r.id }}>
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Excluir registro"
+                          onClick={async () => {
+                            if (!confirm(`Excluir o registro do processo ${r.numero_processo}? Todas as deliberações vinculadas serão removidas. Esta ação é permanente.`)) return;
+                            const { error: errDel } = await supabase.from("deliberacoes").delete().eq("registro_decisao_id", r.id);
+                            if (errDel) { toast.error(errDel.message); return; }
+                            const { error } = await supabase.from("registros_decisao").delete().eq("id", r.id);
+                            if (error) { toast.error(error.message); return; }
+                            toast.success("Registro excluído.");
+                            qc.invalidateQueries({ queryKey: ["registros"] });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
                 );
