@@ -291,7 +291,9 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_master: boolean
           nome: string
+          tribunal_id: string | null
           unidade_tecnica_id: string | null
           updated_at: string
         }
@@ -301,7 +303,9 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          is_master?: boolean
           nome: string
+          tribunal_id?: string | null
           unidade_tecnica_id?: string | null
           updated_at?: string
         }
@@ -311,11 +315,20 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_master?: boolean
           nome?: string
+          tribunal_id?: string | null
           unidade_tecnica_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_tribunal_id_fkey"
+            columns: ["tribunal_id"]
+            isOneToOne: false
+            referencedRelation: "tribunais"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_unidade_tecnica_id_fkey"
             columns: ["unidade_tecnica_id"]
@@ -447,6 +460,33 @@ export type Database = {
         }
         Relationships: []
       }
+      status_monitoramento_options: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          cor: string
+          created_at: string
+          descricao: string
+          ordem: number
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          cor?: string
+          created_at?: string
+          descricao: string
+          ordem?: number
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          cor?: string
+          created_at?: string
+          descricao?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
       tipos_decisao: {
         Row: {
           ativo: boolean
@@ -475,6 +515,7 @@ export type Database = {
           id: string
           permite_unidade_medida: boolean
           permite_valor: boolean
+          prazo_facultativo: boolean
         }
         Insert: {
           ativo?: boolean
@@ -485,6 +526,7 @@ export type Database = {
           id?: string
           permite_unidade_medida?: boolean
           permite_valor?: boolean
+          prazo_facultativo?: boolean
         }
         Update: {
           ativo?: boolean
@@ -495,6 +537,7 @@ export type Database = {
           id?: string
           permite_unidade_medida?: boolean
           permite_valor?: boolean
+          prazo_facultativo?: boolean
         }
         Relationships: []
       }
@@ -513,6 +556,39 @@ export type Database = {
           ativo?: boolean
           descricao?: string
           id?: string
+        }
+        Relationships: []
+      }
+      tribunais: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          esfera: string
+          id: string
+          logo_url: string | null
+          nome: string
+          sigla: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          esfera?: string
+          id?: string
+          logo_url?: string | null
+          nome: string
+          sigla: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          esfera?: string
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          sigla?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -632,6 +708,7 @@ export type Database = {
         | "tipos_julgamento"
         | "tipos_deliberacao"
       status_monitoramento:
+        | "nao_iniciado"
         | "em_monitoramento"
         | "cumprido"
         | "nao_cumprido"
@@ -777,6 +854,7 @@ export const Constants = {
         "tipos_deliberacao",
       ],
       status_monitoramento: [
+        "nao_iniciado",
         "em_monitoramento",
         "cumprido",
         "nao_cumprido",
