@@ -82,6 +82,7 @@ export const Route = createFileRoute("/_authenticated/registros/$id")({
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const STATUS_LABELS: Record<string, string> = {
+  nao_iniciado: "Não iniciado",
   em_monitoramento: "Em monitoramento",
   cumprida: "Cumprida",
   descumprida: "Descumprida",
@@ -134,7 +135,7 @@ function RegistroFormPage() {
   const { data: lookups } = useQuery({
     queryKey: ["lookups"],
     queryFn: async () => {
-      const [u, o, td, tj, tdel, ut, rm] = await Promise.all([
+      const [u, o, td, tj, tdel, ut, rm, sm] = await Promise.all([
         supabase.from("unidades_gestoras").select("id, nome_unidade, sigla").eq("status", true).order("nome_unidade"),
         supabase.from("orgaos_julgadores").select("id, descricao").eq("ativo", true).order("descricao"),
         supabase.from("tipos_decisao").select("id, descricao").eq("ativo", true).order("descricao"),
@@ -142,8 +143,9 @@ function RegistroFormPage() {
         supabase.from("tipos_deliberacao").select("*").eq("ativo", true).order("descricao"),
         (supabase as any).from("unidades_tecnicas").select("id, nome, sigla").eq("ativo", true).order("nome"),
         (supabase as any).from("resultados_monitoramento").select("id, descricao").eq("ativo", true).order("ordem"),
+        (supabase as any).from("status_monitoramento_options").select("codigo, descricao, cor, ordem").eq("ativo", true).order("ordem"),
       ]);
-      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [], unidadesTec: ut.data ?? [], resultadosMon: rm.data ?? [] };
+      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [], unidadesTec: ut.data ?? [], resultadosMon: rm.data ?? [], statusOptions: sm.data ?? [] };
     },
   });
 
@@ -324,6 +326,7 @@ function RegistroFormPage() {
           tipos={lookups?.tiposDel ?? []}
           unidadesTec={lookups?.unidadesTec ?? []}
           resultadosMon={lookups?.resultadosMon ?? []}
+          statusOptions={lookups?.statusOptions ?? []}
           deliberacoes={deliberacoes ?? []}
           onChange={refetchDel}
           canEdit={canEdit}
@@ -373,12 +376,13 @@ function computePrazo(d: any): { label: string; tone: "ok" | "warn" | "danger" |
   return { label: `${diff}d restantes`, tone: "ok" };
 }
 
-function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, deliberacoes, onChange, canEdit, canCreateDeliberacao, canEditMonitoramento, userUnidadeTecnicaId }: {
+function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec, resultadosMon, statusOptions, deliberacoes, onChange, canEdit, canCreateDeliberacao, canEditMonitoramento, userUnidadeTecnicaId }: {
   registroId: string;
   numeroProcessoOrigem: string;
   tipos: any[];
   unidadesTec: any[];
   resultadosMon: any[];
+  statusOptions: any[];
   deliberacoes: any[];
   onChange: () => void;
   canEdit: boolean;
@@ -388,7 +392,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const emptyForm = { status_monitoramento: "em_monitoramento", deliberacao_solidaria: false, anexos: [] as any[] };
+  const emptyForm = { status_monitoramento: "nao_iniciado", deliberacao_solidaria: false, anexos: [] as any[] };
   const [form, setForm] = useState<any>(emptyForm);
   const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
@@ -453,7 +457,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
 
   const submit = async () => {
     if (!form.tipo_deliberacao_id) { toast.error("Selecione o tipo de deliberação."); return; }
-    if (tipoSel?.gera_prazo) {
+    if (tipoSel?.gera_prazo && !tipoSel?.prazo_facultativo) {
       if (!form.data_inicio_prazo) { toast.error("Informe a data de início do prazo."); return; }
       if (!form.prazo_dias) { toast.error("Informe o prazo em dias."); return; }
     }
@@ -525,15 +529,13 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   <Field label="Tipo de Deliberação *">
                     <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} disabled={delibDisabled} />
                   </Field>
-                  <Field label="Status">
-                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })} disabled={delibDisabled}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Field label="Unidade Técnica Responsável">
+                    <SelectField
+                      value={form.unidade_tecnica_id ?? null}
+                      onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
+                      options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
+                      disabled={delibDisabled}
+                    />
                   </Field>
                   <div className="col-span-2">
                     <Field label="Descrição">
@@ -542,10 +544,10 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   </div>
                   {tipoSel?.gera_prazo && (
                     <>
-                      <Field label="Data de Início do Prazo *">
+                      <Field label={`Data de Início do Prazo${tipoSel?.prazo_facultativo ? " (opcional)" : " *"}`}>
                         <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} disabled={delibDisabled} />
                       </Field>
-                      <Field label="Prazo (dias) *">
+                      <Field label={`Prazo (dias)${tipoSel?.prazo_facultativo ? " (opcional)" : " *"}`}>
                         <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} disabled={delibDisabled} />
                       </Field>
                     </>
@@ -572,13 +574,18 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
               <div className="rounded-md border-2 border-dashed border-primary/40 bg-primary/5 p-4 space-y-3 mt-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-primary">Monitoramento</p>
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Unidade Técnica Responsável">
-                    <SelectField
-                      value={form.unidade_tecnica_id ?? null}
-                      onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
-                      options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
-                      disabled={monitDisabled}
-                    />
+                  <Field label="Status">
+                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })} disabled={monitDisabled}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(statusOptions.length > 0
+                          ? statusOptions.map((s) => ({ value: s.codigo, label: s.descricao }))
+                          : Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))
+                        ).map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
                   <Field label="Tipo de Monitoramento">
                     <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })} disabled={monitDisabled}>

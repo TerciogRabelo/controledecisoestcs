@@ -19,12 +19,14 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const COLORS = ["oklch(0.45 0.15 250)", "oklch(0.75 0.15 75)", "oklch(0.65 0.18 145)", "oklch(0.65 0.22 25)", "oklch(0.6 0.05 250)"];
 
 const STATUS_LABELS: Record<string, string> = {
+  nao_iniciado: "Não iniciado",
   em_monitoramento: "Em monitoramento",
   cumprida: "Cumprida",
   descumprida: "Descumprida",
   vencida: "Vencida",
   cancelada: "Cancelada",
 };
+
 
 function DashboardPage() {
   const [filtroUnidade, setFiltroUnidade] = useState<string>("__all");
@@ -95,19 +97,35 @@ function DashboardPage() {
       })
       .sort((a, b) => (b.data_decisao ?? "").localeCompare(a.data_decisao ?? ""));
 
+    const naoIniciadas = statusCount["nao_iniciado"] ?? 0;
+    const emMon = statusCount["em_monitoramento"] ?? 0;
+    const finalizadas = (statusCount["cumprida"] ?? 0) + (statusCount["descumprida"] ?? 0) + (statusCount["vencida"] ?? 0) + (statusCount["cancelada"] ?? 0);
+    const totalDel = d.length;
+    const comMonitoramento = emMon + finalizadas;
+    const pctCobertura = totalDel > 0 ? Math.round((comMonitoramento / totalDel) * 100) : 0;
+
     return {
       totalRegistros: r.length,
-      totalDeliberacoes: d.length,
+      totalDeliberacoes: totalDel,
       comDeliberacao: r.filter((x) => x.houve_deliberacao).length,
       semDeliberacao: r.filter((x) => !x.houve_deliberacao).length,
-      emMonitoramento: statusCount["em_monitoramento"] ?? 0,
+      naoIniciadas,
+      emMonitoramento: emMon,
       cumpridas: statusCount["cumprida"] ?? 0,
       descumpridas: statusCount["descumprida"] ?? 0,
       vencidas: statusCount["vencida"] ?? 0,
+      finalizadas,
+      comMonitoramento,
+      pctCobertura,
+      gaugeData: [
+        { name: "Com monitoramento", value: comMonitoramento, color: "oklch(0.65 0.18 145)" },
+        { name: "Não iniciadas", value: naoIniciadas, color: "oklch(0.75 0.05 250)" },
+      ].filter((x) => x.value > 0),
       porUnidade,
       porTipoDel,
       statusData: [
-        { name: "Em monitoramento", value: statusCount["em_monitoramento"] ?? 0 },
+        { name: "Não iniciado", value: naoIniciadas },
+        { name: "Em monitoramento", value: emMon },
         { name: "Cumpridas", value: statusCount["cumprida"] ?? 0 },
         { name: "Descumpridas", value: statusCount["descumprida"] ?? 0 },
         { name: "Vencidas", value: statusCount["vencida"] ?? 0 },
@@ -187,6 +205,65 @@ function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" /> Cobertura de Monitoramento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filtered.totalDeliberacoes === 0 ? (
+            <p className="text-sm text-muted-foreground">Sem deliberações cadastradas.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={filtered.gaugeData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="90%"
+                      startAngle={180}
+                      endAngle={0}
+                      innerRadius={70}
+                      outerRadius={110}
+                      paddingAngle={2}
+                    >
+                      {filtered.gaugeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-x-0 bottom-4 text-center">
+                  <div className="text-3xl font-bold text-success">{filtered.pctCobertura}%</div>
+                  <div className="text-xs text-muted-foreground">com monitoramento</div>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <span className="text-muted-foreground">Total de deliberações</span>
+                  <span className="font-semibold">{filtered.totalDeliberacoes}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-muted-foreground/40" /> Não iniciadas</span>
+                  <span className="font-medium">{filtered.naoIniciadas} ({filtered.totalDeliberacoes ? Math.round(filtered.naoIniciadas / filtered.totalDeliberacoes * 100) : 0}%)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-info" /> Em monitoramento</span>
+                  <span className="font-medium">{filtered.emMonitoramento} ({filtered.totalDeliberacoes ? Math.round(filtered.emMonitoramento / filtered.totalDeliberacoes * 100) : 0}%)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-success" /> Finalizadas</span>
+                  <span className="font-medium">{filtered.finalizadas} ({filtered.totalDeliberacoes ? Math.round(filtered.finalizadas / filtered.totalDeliberacoes * 100) : 0}%)</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
