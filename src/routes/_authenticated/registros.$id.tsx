@@ -500,6 +500,12 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
     onChange();
   };
 
+  // Permissões dentro do diálogo:
+  // - Bloco "Deliberação" só pode ser editado por admin/secretaria
+  // - Bloco "Monitoramento" só pode ser editado por admin/monitoramento
+  const delibDisabled = !canEdit;
+  const monitDisabled = !canEditMonitoramento;
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
