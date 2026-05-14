@@ -236,7 +236,7 @@ function UnidadeForm({ initial, onSave, onCancel }: any) {
   );
 }
 
-function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_decisao" | "tipos_julgamento"; label: string }) {
+function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_decisao" | "tipos_julgamento" | "resultados_monitoramento"; label: string }) {
   const qc = useQueryClient();
   const { hasAnyRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
