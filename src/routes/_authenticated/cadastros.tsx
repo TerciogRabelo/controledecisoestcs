@@ -88,7 +88,8 @@ function CadastrosPage() {
         <TabsTrigger value="tipos_decisao">Tipos de Decisão</TabsTrigger>
         <TabsTrigger value="tipos_julgamento">Tipos de Julgamento</TabsTrigger>
         <TabsTrigger value="tipos_deliberacao">Tipos de Deliberação</TabsTrigger>
-        <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
+       <TabsTrigger value="unidades_tecnicas">Unidades Técnicas</TabsTrigger>
+        <TabsTrigger value="resultados_monitoramento">Resultados Monitoramento</TabsTrigger>
         <TabsTrigger value="processos">Processos</TabsTrigger>
         <TabsTrigger value="fontes">Fontes Externas (API)</TabsTrigger>
       </TabsList>
