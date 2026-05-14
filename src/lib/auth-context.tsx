@@ -30,6 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [aprovado, setAprovado] = useState<boolean>(false);
   const [unidadeTecnicaId, setUnidadeTecnicaId] = useState<string | null>(null);
+  const [tribunalId, setTribunalId] = useState<string | null>(null);
+  const [isMaster, setIsMaster] = useState<boolean>(false);
+  const [tribunal, setTribunal] = useState<AuthState["tribunal"]>(null);
   const [loading, setLoading] = useState(true);
 
   const loadRoles = async (uid: string | undefined) => {
@@ -37,15 +40,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRoles([]);
       setAprovado(false);
       setUnidadeTecnicaId(null);
+      setTribunalId(null);
+      setIsMaster(false);
+      setTribunal(null);
       return;
     }
     const [rolesRes, profRes] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", uid),
-      (supabase as any).from("profiles").select("aprovado, unidade_tecnica_id").eq("id", uid).maybeSingle(),
+      (supabase as any).from("profiles").select("aprovado, unidade_tecnica_id, tribunal_id, is_master").eq("id", uid).maybeSingle(),
     ]);
     setRoles((rolesRes.data ?? []).map((r) => r.role as AppRole));
     setAprovado(!!profRes.data?.aprovado);
     setUnidadeTecnicaId(profRes.data?.unidade_tecnica_id ?? null);
+    setTribunalId(profRes.data?.tribunal_id ?? null);
+    setIsMaster(!!profRes.data?.is_master);
+    if (profRes.data?.tribunal_id) {
+      const { data: t } = await (supabase as any)
+        .from("tribunais")
+        .select("id, sigla, nome, logo_url")
+        .eq("id", profRes.data.tribunal_id)
+        .maybeSingle();
+      setTribunal(t ?? null);
+    } else {
+      setTribunal(null);
+    }
   };
 
   useEffect(() => {
