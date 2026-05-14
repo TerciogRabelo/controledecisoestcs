@@ -23,17 +23,18 @@ const ROLES: { v: "admin" | "secretaria" | "monitoramento" | "consulta"; label: 
 
 function UsuariosPage() {
   const qc = useQueryClient();
-  const { hasRole, user } = useAuth();
+  const { hasRole, user, isMaster, tribunalId } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["usuarios"],
     queryFn: async () => {
-      const [profiles, roles, uts] = await Promise.all([
+      const [profiles, roles, uts, tribunais] = await Promise.all([
         (supabase as any).from("profiles").select("*").order("nome"),
         supabase.from("user_roles").select("*"),
         (supabase as any).from("unidades_tecnicas").select("id, nome, sigla").eq("ativo", true).order("nome"),
+        (supabase as any).from("tribunais").select("id, sigla, nome").eq("ativo", true).order("sigla"),
       ]);
-      return { profiles: profiles.data ?? [], roles: roles.data ?? [], uts: uts.data ?? [] };
+      return { profiles: profiles.data ?? [], roles: roles.data ?? [], uts: uts.data ?? [], tribunais: tribunais.data ?? [] };
     },
   });
 
@@ -52,7 +53,6 @@ function UsuariosPage() {
     await supabase.from("user_roles").delete().eq("user_id", uid);
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role });
     if (error) { toast.error(error.message); return; }
-    // Se mudou para perfil que não é monitoramento, limpa a UT
     if (role !== "monitoramento") {
       await (supabase as any).from("profiles").update({ unidade_tecnica_id: null }).eq("id", uid);
     }
@@ -67,6 +67,20 @@ function UsuariosPage() {
     qc.invalidateQueries({ queryKey: ["usuarios"] });
   };
 
+  const setTribunal = async (uid: string, tid: string | null) => {
+    const { error } = await (supabase as any).from("profiles").update({ tribunal_id: tid }).eq("id", uid);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Tribunal atualizado.");
+    qc.invalidateQueries({ queryKey: ["usuarios"] });
+  };
+
+  const setMaster = async (uid: string, v: boolean) => {
+    const { error } = await (supabase as any).from("profiles").update({ is_master: v }).eq("id", uid);
+    if (error) { toast.error(error.message); return; }
+    toast.success(v ? "Usuário promovido a master." : "Privilégio master removido.");
+    qc.invalidateQueries({ queryKey: ["usuarios"] });
+  };
+
   const setAprovado = async (uid: string, aprovado: boolean) => {
     const { error } = await supabase.from("profiles").update({ aprovado }).eq("id", uid);
     if (error) { toast.error(error.message); return; }
@@ -78,6 +92,7 @@ function UsuariosPage() {
 
   const profiles: any[] = data?.profiles ?? [];
   const uts: any[] = data?.uts ?? [];
+  const tribunais: any[] = data?.tribunais ?? [];
   const pendentes = profiles.filter((p: any) => !p.aprovado);
 
   return (
