@@ -590,10 +590,10 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </Select>
                   </Field>
                   <Field label="Início do Monitoramento">
-                    <Input type="date" value={form.monitoramento_inicio ?? ""} onChange={(e) => setForm({ ...form, monitoramento_inicio: e.target.value })} />
+                    <Input type="date" value={form.monitoramento_inicio ?? ""} onChange={(e) => setForm({ ...form, monitoramento_inicio: e.target.value })} disabled={monitDisabled} />
                   </Field>
                   <Field label="Fim Previsto do Monitoramento">
-                    <Input type="date" value={form.monitoramento_fim ?? ""} onChange={(e) => setForm({ ...form, monitoramento_fim: e.target.value })} />
+                    <Input type="date" value={form.monitoramento_fim ?? ""} onChange={(e) => setForm({ ...form, monitoramento_fim: e.target.value })} disabled={monitDisabled} />
                   </Field>
                   {form.monitoramento_tipo === "processual" && (
                     <>
@@ -601,6 +601,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                         <Select
                           value={form.monitoramento_processo_origem === true ? "origem" : form.monitoramento_processo_origem === false ? "outro" : ""}
                           onValueChange={(v) => setForm({ ...form, monitoramento_processo_origem: v === "origem" })}
+                          disabled={monitDisabled}
                         >
                           <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
                           <SelectContent>
@@ -611,17 +612,17 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       </Field>
                       {form.monitoramento_processo_origem === false && (
                         <Field label="Número do Outro Processo *">
-                          <Input value={form.monitoramento_numero_processo ?? ""} onChange={(e) => setForm({ ...form, monitoramento_numero_processo: maskProcesso(e.target.value) })} placeholder="000000/0000" />
+                          <Input value={form.monitoramento_numero_processo ?? ""} onChange={(e) => setForm({ ...form, monitoramento_numero_processo: maskProcesso(e.target.value) })} placeholder="000000/0000" disabled={monitDisabled} />
                         </Field>
                       )}
                     </>
                   )}
                   <Field label="Data de Verificação">
-                    <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} />
+                    <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} disabled={monitDisabled} />
                   </Field>
                   <div className="col-span-2">
                     <Field label="Resposta do Gestor">
-                      <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} />
+                      <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} disabled={monitDisabled} />
                     </Field>
                   </div>
                   <div className="col-span-2">
@@ -630,24 +631,27 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       value={form.resultado_monitoramento_id ?? null}
                       onChange={(v) => setForm({ ...form, resultado_monitoramento_id: v })}
                       options={resultadosMon.map((r) => ({ value: r.id, label: r.descricao }))}
+                      disabled={monitDisabled}
                     />
                   </Field>
                   <div className="col-span-2">
                     <Field label="Detalhamento do Resultado (opcional)">
-                      <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} />
+                      <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} disabled={monitDisabled} />
                     </Field>
                   </div>
                   </div>
                   <div className="col-span-2">
                     <Field label="Evidências">
                       <div className="space-y-2">
-                        <Input type="file" multiple disabled={uploading} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
+                        <Input type="file" multiple disabled={uploading || monitDisabled} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
                         {(form.anexos ?? []).length > 0 && (
                           <ul className="text-xs space-y-1">
                             {(form.anexos ?? []).map((a: any) => (
                               <li key={a.path} className="flex items-center justify-between bg-background border border-border rounded px-2 py-1">
                                 <button type="button" className="truncate text-left hover:underline flex-1" onClick={() => downloadAnexo(a.path)}>{a.nome}</button>
-                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAnexo(a.path)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                {!monitDisabled && (
+                                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAnexo(a.path)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                )}
                               </li>
                             ))}
                           </ul>
