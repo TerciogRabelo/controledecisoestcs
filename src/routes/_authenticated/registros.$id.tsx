@@ -608,9 +608,18 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </Field>
                   </div>
                   <div className="col-span-2">
-                    <Field label="Resultado do Monitoramento">
+                  <Field label="Resultado do Monitoramento">
+                    <SelectField
+                      value={form.resultado_monitoramento_id ?? null}
+                      onChange={(v) => setForm({ ...form, resultado_monitoramento_id: v })}
+                      options={resultadosMon.map((r) => ({ value: r.id, label: r.descricao }))}
+                    />
+                  </Field>
+                  <div className="col-span-2">
+                    <Field label="Detalhamento do Resultado (opcional)">
                       <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} />
                     </Field>
+                  </div>
                   </div>
                   <div className="col-span-2">
                     <Field label="Evidências">
