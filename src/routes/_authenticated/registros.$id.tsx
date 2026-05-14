@@ -122,8 +122,10 @@ function RegistroFormPage() {
   const isNew = id === "novo";
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { hasAnyRole, user } = useAuth();
+  const { hasAnyRole, hasRole, user, unidadeTecnicaId } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canEditMonitoramento = hasRole("admin") || hasRole("monitoramento");
+  const canCreateDeliberacao = hasAnyRole(["admin", "secretaria"]);
 
   const [form, setForm] = useState<RD>(empty);
   const [saving, setSaving] = useState(false);
