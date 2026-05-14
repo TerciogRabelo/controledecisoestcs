@@ -870,10 +870,44 @@ function StatusMonitoramento() {
     qc.invalidateQueries({ queryKey: ["status_monitoramento_options"] });
   };
 
+  const [novoCodigo, setNovoCodigo] = useState("");
+  const [novaDescricao, setNovaDescricao] = useState("");
+  const [novaCor, setNovaCor] = useState("#64748b");
+
+  const insert = async () => {
+    const codigo = novoCodigo.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    if (!codigo || !novaDescricao.trim()) { toast.error("Informe código e descrição."); return; }
+    const ordem = ((data ?? []).reduce((m: number, x: any) => Math.max(m, x.ordem ?? 0), 0) || 0) + 10;
+    const { error } = await (supabase as any).from("status_monitoramento_options").insert({
+      codigo, descricao: novaDescricao.trim(), cor: novaCor, ordem, ativo: true,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Status criado.");
+    setNovoCodigo(""); setNovaDescricao(""); setNovaCor("#64748b");
+    qc.invalidateQueries({ queryKey: ["status_monitoramento_options"] });
+  };
+
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
-        <p className="text-xs text-muted-foreground">Status disponíveis para o monitoramento das deliberações. O código é fixo (vinculado ao sistema); descrição, ordem e cor são editáveis.</p>
+        <p className="text-xs text-muted-foreground">Status disponíveis para o monitoramento das deliberações. Descrição, ordem e cor são editáveis. Novos códigos podem ser cadastrados livremente.</p>
+        {canEdit && (
+          <div className="flex flex-wrap items-end gap-2 p-3 rounded-md border bg-muted/30">
+            <div className="space-y-1">
+              <Label className="text-xs">Código</Label>
+              <Input value={novoCodigo} onChange={(e) => setNovoCodigo(e.target.value)} placeholder="ex: aguardando_doc" className="w-48 font-mono text-xs" />
+            </div>
+            <div className="space-y-1 flex-1 min-w-[200px]">
+              <Label className="text-xs">Descrição</Label>
+              <Input value={novaDescricao} onChange={(e) => setNovaDescricao(e.target.value)} placeholder="Descrição visível" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Cor</Label>
+              <Input type="color" value={novaCor} onChange={(e) => setNovaCor(e.target.value)} className="h-9 w-14 p-1" />
+            </div>
+            <Button onClick={insert} size="sm"><Plus className="h-4 w-4" /> Adicionar</Button>
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
