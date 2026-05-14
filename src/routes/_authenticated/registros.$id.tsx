@@ -82,6 +82,7 @@ export const Route = createFileRoute("/_authenticated/registros/$id")({
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const STATUS_LABELS: Record<string, string> = {
+  nao_iniciado: "Não iniciado",
   em_monitoramento: "Em monitoramento",
   cumprida: "Cumprida",
   descumprida: "Descumprida",
