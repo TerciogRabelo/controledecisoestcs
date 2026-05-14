@@ -36,17 +36,19 @@ function DashboardPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-data"],
     queryFn: async () => {
-      const [registros, deliberacoes, unidades, tiposDel] = await Promise.all([
+      const [registros, deliberacoes, unidades, tiposDel, unidadesTec] = await Promise.all([
         supabase.from("registros_decisao").select("id, numero_processo, status_registro, houve_deliberacao, quantidade_deliberacoes, data_decisao, unidade_gestora_id, orgao_julgador_id, gestor_responsavel, cpf_cnpj"),
-        supabase.from("deliberacoes").select("id, registro_decisao_id, status_monitoramento, prazo_dias, criado_em, tipo_deliberacao_id"),
+        supabase.from("deliberacoes").select("id, registro_decisao_id, status_monitoramento, prazo_dias, criado_em, tipo_deliberacao_id, unidade_tecnica_id"),
         supabase.from("unidades_gestoras").select("id, nome_unidade, sigla"),
         supabase.from("tipos_deliberacao").select("id, descricao, cor"),
+        supabase.from("unidades_tecnicas").select("id, nome, sigla"),
       ]);
       return {
         registros: registros.data ?? [],
         deliberacoes: deliberacoes.data ?? [],
         unidades: unidades.data ?? [],
         tiposDel: tiposDel.data ?? [],
+        unidadesTec: unidadesTec.data ?? [],
       };
     },
   });
@@ -118,11 +120,20 @@ function DashboardPage() {
       comMonitoramento,
       pctCobertura,
       gaugeData: [
-        { name: "Com monitoramento", value: comMonitoramento, color: "oklch(0.65 0.18 145)" },
+        { name: "Em monitoramento", value: emMon, color: "oklch(0.65 0.18 230)" },
+        { name: "Finalizadas", value: finalizadas, color: "oklch(0.65 0.18 145)" },
         { name: "Não iniciadas", value: naoIniciadas, color: "oklch(0.75 0.05 250)" },
       ].filter((x) => x.value > 0),
       porUnidade,
       porTipoDel,
+      porUnidadeTec: data.unidadesTec
+        .map((ut) => {
+          const dels = d.filter((x) => x.unidade_tecnica_id === ut.id);
+          const pendentes = dels.filter((x) => x.status_monitoramento === "nao_iniciado").length;
+          return { nome: (ut.sigla ?? ut.nome).slice(0, 20), total: dels.length, pendentes };
+        })
+        .filter((x) => x.total > 0)
+        .sort((a, b) => b.total - a.total),
       statusData: [
         { name: "Não iniciado", value: naoIniciadas },
         { name: "Em monitoramento", value: emMon },
@@ -261,6 +272,31 @@ function DashboardPage() {
                 </div>
               </div>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="h-4 w-4" /> Deliberações por Unidade Técnica
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Total de deliberações vinculadas a cada unidade técnica e quantas seguem pendentes (não iniciadas).</p>
+        </CardHeader>
+        <CardContent>
+          {filtered.porUnidadeTec.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma deliberação vinculada a unidades técnicas ainda.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={filtered.porUnidadeTec}>
+                <XAxis dataKey="nome" fontSize={11} tick={{ fill: "currentColor" }} />
+                <YAxis fontSize={11} tick={{ fill: "currentColor" }} allowDecimals={false} />
+                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="total" name="Total" fill="oklch(0.45 0.15 250)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="pendentes" name="Pendentes (não iniciadas)" fill="oklch(0.7 0.18 60)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
