@@ -15,7 +15,7 @@ interface AuthState {
   tribunal: { id: string; sigla: string; nome: string; logo_url: string | null } | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, nome: string, tribunalId?: string | null) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
@@ -88,12 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, nome: string) => {
+  const signUp = async (email: string, password: string, nome: string, tribunalId?: string | null) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { nome },
+        data: { nome, tribunal_id: tribunalId ?? null },
         emailRedirectTo: `${window.location.origin}/`,
       },
     });

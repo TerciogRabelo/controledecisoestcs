@@ -112,8 +112,9 @@ function CadastrosPage() {
 
 function UnidadesGestoras() {
   const qc = useQueryClient();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canDelete = hasRole("admin");
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
 
@@ -130,6 +131,14 @@ function UnidadesGestoras() {
     if (error) { toast.error(error.message); return; }
     toast.success("Salvo.");
     setOpen(false); setEdit(null);
+    qc.invalidateQueries({ queryKey: ["unidades_gestoras"] });
+  };
+
+  const remove = async (id: string, nome: string) => {
+    if (!confirm(`Excluir "${nome}"? Só será concluído se não houver registros associados.`)) return;
+    const { error } = await supabase.from("unidades_gestoras").delete().eq("id", id);
+    if (error) { toast.error("Não foi possível excluir: existem registros que utilizam esta unidade. Considere desativá-la."); return; }
+    toast.success("Excluído.");
     qc.invalidateQueries({ queryKey: ["unidades_gestoras"] });
   };
 
@@ -187,11 +196,18 @@ function UnidadesGestoras() {
                   <Badge variant={u.status ? "default" : "outline"}>{u.status ? "Ativa" : "Inativa"}</Badge>
                 </TableCell>
                 <TableCell>
-                  {canEdit && (
-                    <Button variant="ghost" size="icon" onClick={() => { setEdit(u); setOpen(true); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <div className="flex gap-1">
+                    {canEdit && (
+                      <Button variant="ghost" size="icon" onClick={() => { setEdit(u); setOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" onClick={() => remove(u.id, u.nome_unidade)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -242,9 +258,12 @@ function UnidadeForm({ initial, onSave, onCancel }: any) {
 
 function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_decisao" | "tipos_julgamento" | "resultados_monitoramento"; label: string }) {
   const qc = useQueryClient();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canDelete = hasRole("admin");
   const [novo, setNovo] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
 
   const { data } = useQuery({
     queryKey: [table],
@@ -259,8 +278,28 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
     qc.invalidateQueries({ queryKey: [table] });
   };
 
+  const saveEdit = async (id: string) => {
+    if (!editingValue.trim()) { toast.error("Descrição obrigatória."); return; }
+    const { error } = await supabase.from(table).update({ descricao: editingValue.trim() }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setEditingId(null); setEditingValue("");
+    toast.success("Atualizado.");
+    qc.invalidateQueries({ queryKey: [table] });
+  };
+
   const toggle = async (id: string, ativo: boolean) => {
     await supabase.from(table).update({ ativo: !ativo }).eq("id", id);
+    qc.invalidateQueries({ queryKey: [table] });
+  };
+
+  const remove = async (id: string, descricao: string) => {
+    if (!confirm(`Excluir "${descricao}"? Esta ação só será concluída se não houver registros associados.`)) return;
+    const { error } = await supabase.from(table).delete().eq("id", id);
+    if (error) {
+      toast.error("Não foi possível excluir: existem registros que utilizam este item. Considere desativá-lo.");
+      return;
+    }
+    toast.success("Excluído.");
     qc.invalidateQueries({ queryKey: [table] });
   };
 
@@ -285,17 +324,39 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
           </div>
         )}
         <Table>
-          <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead className="w-[100px]">Status</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Descrição</TableHead><TableHead className="w-[100px]">Status</TableHead><TableHead className="w-[110px]"></TableHead></TableRow></TableHeader>
           <TableBody>
             {(data ?? []).map((r: any) => (
               <TableRow key={r.id}>
-                <TableCell>{r.descricao}</TableCell>
+                <TableCell>
+                  {editingId === r.id ? (
+                    <div className="flex gap-2">
+                      <Input value={editingValue} onChange={(e) => setEditingValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit(r.id)} autoFocus />
+                      <Button size="sm" onClick={() => saveEdit(r.id)}>Salvar</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditingValue(""); }}>Cancelar</Button>
+                    </div>
+                  ) : r.descricao}
+                </TableCell>
                 <TableCell>
                   {canEdit ? (
                     <Switch checked={r.ativo} onCheckedChange={() => toggle(r.id, r.ativo)} />
                   ) : (
                     <Badge variant={r.ativo ? "default" : "outline"}>{r.ativo ? "Ativo" : "Inativo"}</Badge>
                   )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {canEdit && editingId !== r.id && (
+                      <Button variant="ghost" size="icon" onClick={() => { setEditingId(r.id); setEditingValue(r.descricao); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" onClick={() => remove(r.id, r.descricao)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -308,8 +369,9 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
 
 function TiposDeliberacao() {
   const qc = useQueryClient();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canDelete = hasRole("admin");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const emptyForm = { cor: "#1e40af", icone: "gavel", gera_prazo: false, prazo_facultativo: false, permite_valor: false, permite_unidade_medida: false, ativo: true };
@@ -337,6 +399,14 @@ function TiposDeliberacao() {
 
   const toggle = async (t: any) => {
     await supabase.from("tipos_deliberacao").update({ ativo: !t.ativo }).eq("id", t.id);
+    qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] });
+  };
+
+  const remove = async (t: any) => {
+    if (!confirm(`Excluir "${t.descricao}"? Só será concluído se não houver deliberações associadas.`)) return;
+    const { error } = await supabase.from("tipos_deliberacao").delete().eq("id", t.id);
+    if (error) { toast.error("Não foi possível excluir: existem deliberações que utilizam este tipo. Considere desativá-lo."); return; }
+    toast.success("Excluído.");
     qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] });
   };
 
@@ -410,11 +480,18 @@ function TiposDeliberacao() {
                   )}
                 </TableCell>
                 <TableCell>
-                  {canEdit && (
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <div className="flex gap-1">
+                    {canEdit && (
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" onClick={() => remove(t)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -577,8 +654,9 @@ function FontesDados() {
 
 function UnidadesTecnicas() {
   const qc = useQueryClient();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canDelete = hasRole("admin");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const emptyForm = { nome: "", sigla: "", ativo: true };
@@ -606,6 +684,14 @@ function UnidadesTecnicas() {
 
   const toggle = async (u: any) => {
     await (supabase as any).from("unidades_tecnicas").update({ ativo: !u.ativo }).eq("id", u.id);
+    qc.invalidateQueries({ queryKey: ["unidades_tecnicas"] });
+  };
+
+  const remove = async (u: any) => {
+    if (!confirm(`Excluir "${u.nome}"? Só será concluído se não houver registros associados.`)) return;
+    const { error } = await (supabase as any).from("unidades_tecnicas").delete().eq("id", u.id);
+    if (error) { toast.error("Não foi possível excluir: existem registros que utilizam esta unidade técnica. Considere desativá-la."); return; }
+    toast.success("Excluído.");
     qc.invalidateQueries({ queryKey: ["unidades_tecnicas"] });
   };
 
@@ -649,7 +735,10 @@ function UnidadesTecnicas() {
                   {canEdit ? <Switch checked={u.ativo} onCheckedChange={() => toggle(u)} /> : <Badge variant={u.ativo ? "default" : "outline"}>{u.ativo ? "Ativa" : "Inativa"}</Badge>}
                 </TableCell>
                 <TableCell>
-                  {canEdit && <Button variant="ghost" size="icon" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>}
+                  <div className="flex gap-1">
+                    {canEdit && <Button variant="ghost" size="icon" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>}
+                    {canDelete && <Button variant="ghost" size="icon" onClick={() => remove(u)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -856,6 +945,14 @@ function Tribunais() {
     refreshRoles();
   };
 
+  const remove = async (t: any) => {
+    if (!confirm(`Excluir tribunal "${t.sigla}"? Só será concluído se não houver usuários ou registros vinculados.`)) return;
+    const { error } = await (supabase as any).from("tribunais").delete().eq("id", t.id);
+    if (error) { toast.error("Não foi possível excluir: existem vínculos com este tribunal. Considere desativá-lo."); return; }
+    toast.success("Excluído.");
+    qc.invalidateQueries({ queryKey: ["tribunais"] });
+  };
+
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
@@ -896,9 +993,14 @@ function Tribunais() {
                 <TableCell><Badge variant="outline">{t.esfera}</Badge></TableCell>
                 <TableCell><Badge variant={t.ativo ? "default" : "outline"}>{t.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
                 <TableCell>
-                  {(isMaster || (isAdmin && t.id === tribunalId)) && (
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                  )}
+                  <div className="flex gap-1">
+                    {(isMaster || (isAdmin && t.id === tribunalId)) && (
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
+                    )}
+                    {isMaster && (
+                      <Button variant="ghost" size="icon" onClick={() => remove(t)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
