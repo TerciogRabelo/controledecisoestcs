@@ -369,8 +369,9 @@ function SimpleCrud({ table, label }: { table: "orgaos_julgadores" | "tipos_deci
 
 function TiposDeliberacao() {
   const qc = useQueryClient();
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, hasRole } = useAuth();
   const canEdit = hasAnyRole(["admin", "secretaria"]);
+  const canDelete = hasRole("admin");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const emptyForm = { cor: "#1e40af", icone: "gavel", gera_prazo: false, prazo_facultativo: false, permite_valor: false, permite_unidade_medida: false, ativo: true };
@@ -398,6 +399,14 @@ function TiposDeliberacao() {
 
   const toggle = async (t: any) => {
     await supabase.from("tipos_deliberacao").update({ ativo: !t.ativo }).eq("id", t.id);
+    qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] });
+  };
+
+  const remove = async (t: any) => {
+    if (!confirm(`Excluir "${t.descricao}"? Só será concluído se não houver deliberações associadas.`)) return;
+    const { error } = await supabase.from("tipos_deliberacao").delete().eq("id", t.id);
+    if (error) { toast.error("Não foi possível excluir: existem deliberações que utilizam este tipo. Considere desativá-lo."); return; }
+    toast.success("Excluído.");
     qc.invalidateQueries({ queryKey: ["tipos_deliberacao"] });
   };
 
