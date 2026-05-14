@@ -71,6 +71,7 @@ export type Database = {
           registro_decisao_id: string
           resposta_gestor: string | null
           resultado_monitoramento: string | null
+          resultado_monitoramento_id: string | null
           status_monitoramento: Database["public"]["Enums"]["status_monitoramento"]
           tipo_deliberacao_id: string | null
           unidade_medida: string | null
@@ -100,6 +101,7 @@ export type Database = {
           registro_decisao_id: string
           resposta_gestor?: string | null
           resultado_monitoramento?: string | null
+          resultado_monitoramento_id?: string | null
           status_monitoramento?: Database["public"]["Enums"]["status_monitoramento"]
           tipo_deliberacao_id?: string | null
           unidade_medida?: string | null
@@ -129,6 +131,7 @@ export type Database = {
           registro_decisao_id?: string
           resposta_gestor?: string | null
           resultado_monitoramento?: string | null
+          resultado_monitoramento_id?: string | null
           status_monitoramento?: Database["public"]["Enums"]["status_monitoramento"]
           tipo_deliberacao_id?: string | null
           unidade_medida?: string | null
@@ -141,6 +144,13 @@ export type Database = {
             columns: ["registro_decisao_id"]
             isOneToOne: false
             referencedRelation: "registros_decisao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliberacoes_resultado_monitoramento_id_fkey"
+            columns: ["resultado_monitoramento_id"]
+            isOneToOne: false
+            referencedRelation: "resultados_monitoramento"
             referencedColumns: ["id"]
           },
           {
@@ -306,6 +316,7 @@ export type Database = {
       }
       registros_decisao: {
         Row: {
+          anexos: Json
           atualizado_em: string
           atualizado_por: string | null
           cpf_cnpj: string | null
@@ -327,6 +338,7 @@ export type Database = {
           unidade_gestora_id: string | null
         }
         Insert: {
+          anexos?: Json
           atualizado_em?: string
           atualizado_por?: string | null
           cpf_cnpj?: string | null
@@ -348,6 +360,7 @@ export type Database = {
           unidade_gestora_id?: string | null
         }
         Update: {
+          anexos?: Json
           atualizado_em?: string
           atualizado_por?: string | null
           cpf_cnpj?: string | null
@@ -398,6 +411,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      resultados_monitoramento: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string
+          id: string
+          ordem: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao: string
+          id?: string
+          ordem?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string
+          id?: string
+          ordem?: number
+        }
+        Relationships: []
       }
       tipos_decisao: {
         Row: {
