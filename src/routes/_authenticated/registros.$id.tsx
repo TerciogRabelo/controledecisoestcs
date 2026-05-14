@@ -529,15 +529,13 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   <Field label="Tipo de Deliberação *">
                     <SelectField value={form.tipo_deliberacao_id ?? null} onChange={(v) => setForm({ ...form, tipo_deliberacao_id: v })} options={tipos.map((t) => ({ value: t.id, label: t.descricao }))} disabled={delibDisabled} />
                   </Field>
-                  <Field label="Status">
-                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })} disabled={delibDisabled}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Field label="Unidade Técnica Responsável">
+                    <SelectField
+                      value={form.unidade_tecnica_id ?? null}
+                      onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
+                      options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
+                      disabled={delibDisabled}
+                    />
                   </Field>
                   <div className="col-span-2">
                     <Field label="Descrição">
@@ -546,10 +544,10 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   </div>
                   {tipoSel?.gera_prazo && (
                     <>
-                      <Field label="Data de Início do Prazo *">
+                      <Field label={`Data de Início do Prazo${tipoSel?.prazo_facultativo ? " (opcional)" : " *"}`}>
                         <Input type="date" max={TODAY} value={form.data_inicio_prazo ?? ""} onChange={(e) => setForm({ ...form, data_inicio_prazo: e.target.value })} disabled={delibDisabled} />
                       </Field>
-                      <Field label="Prazo (dias) *">
+                      <Field label={`Prazo (dias)${tipoSel?.prazo_facultativo ? " (opcional)" : " *"}`}>
                         <Input type="number" min={1} value={form.prazo_dias ?? ""} onChange={(e) => setForm({ ...form, prazo_dias: e.target.value ? Number(e.target.value) : null })} disabled={delibDisabled} />
                       </Field>
                     </>
@@ -570,6 +568,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </Field>
                   </div>
                 </div>
+              </div>
               </div>
 
               {/* Bloco 2: Monitoramento */}
