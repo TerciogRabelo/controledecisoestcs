@@ -28,11 +28,12 @@ function UsuariosPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["usuarios"],
     queryFn: async () => {
-      const [profiles, roles] = await Promise.all([
-        supabase.from("profiles").select("*").order("nome"),
+      const [profiles, roles, uts] = await Promise.all([
+        (supabase as any).from("profiles").select("*").order("nome"),
         supabase.from("user_roles").select("*"),
+        (supabase as any).from("unidades_tecnicas").select("id, nome, sigla").eq("ativo", true).order("nome"),
       ]);
-      return { profiles: profiles.data ?? [], roles: roles.data ?? [] };
+      return { profiles: profiles.data ?? [], roles: roles.data ?? [], uts: uts.data ?? [] };
     },
   });
 
@@ -51,7 +52,18 @@ function UsuariosPage() {
     await supabase.from("user_roles").delete().eq("user_id", uid);
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role });
     if (error) { toast.error(error.message); return; }
+    // Se mudou para perfil que não é monitoramento, limpa a UT
+    if (role !== "monitoramento") {
+      await (supabase as any).from("profiles").update({ unidade_tecnica_id: null }).eq("id", uid);
+    }
     toast.success("Perfil atualizado.");
+    qc.invalidateQueries({ queryKey: ["usuarios"] });
+  };
+
+  const setUnidadeTecnica = async (uid: string, ut: string | null) => {
+    const { error } = await (supabase as any).from("profiles").update({ unidade_tecnica_id: ut }).eq("id", uid);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Unidade técnica atualizada.");
     qc.invalidateQueries({ queryKey: ["usuarios"] });
   };
 
