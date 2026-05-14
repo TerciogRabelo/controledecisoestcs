@@ -854,6 +854,22 @@ function StatusMonitoramento() {
     qc.invalidateQueries({ queryKey: ["status_monitoramento_options"] });
   };
 
+  const remove = async (codigo: string) => {
+    if (!confirm(`Excluir o status "${codigo}"? Esta ação é permanente.`)) return;
+    const { count } = await (supabase as any)
+      .from("deliberacoes")
+      .select("id", { count: "exact", head: true })
+      .eq("status_monitoramento", codigo);
+    if ((count ?? 0) > 0) {
+      toast.error(`Não é possível excluir: ${count} deliberação(ões) usam este status.`);
+      return;
+    }
+    const { error } = await (supabase as any).from("status_monitoramento_options").delete().eq("codigo", codigo);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Status excluído.");
+    qc.invalidateQueries({ queryKey: ["status_monitoramento_options"] });
+  };
+
   return (
     <Card className="mt-4">
       <CardContent className="p-4 space-y-3">
@@ -866,6 +882,7 @@ function StatusMonitoramento() {
               <TableHead className="w-[80px]">Ordem</TableHead>
               <TableHead className="w-[80px]">Cor</TableHead>
               <TableHead className="w-[100px]">Status</TableHead>
+              {canEdit && <TableHead className="w-[60px]"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -890,6 +907,13 @@ function StatusMonitoramento() {
                 <TableCell>
                   {canEdit ? <Switch checked={s.ativo} onCheckedChange={(v) => update(s.codigo, { ativo: v })} /> : <Badge variant={s.ativo ? "default" : "outline"}>{s.ativo ? "Ativo" : "Inativo"}</Badge>}
                 </TableCell>
+                {canEdit && (
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => remove(s.codigo)} title="Excluir">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
