@@ -1,0 +1,1 @@
+CREATE POLICY "anon view tribunais" ON public.tribunais FOR SELECT TO anon USING (ativo = true);
