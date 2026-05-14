@@ -135,7 +135,7 @@ function RegistroFormPage() {
   const { data: lookups } = useQuery({
     queryKey: ["lookups"],
     queryFn: async () => {
-      const [u, o, td, tj, tdel, ut, rm] = await Promise.all([
+      const [u, o, td, tj, tdel, ut, rm, sm] = await Promise.all([
         supabase.from("unidades_gestoras").select("id, nome_unidade, sigla").eq("status", true).order("nome_unidade"),
         supabase.from("orgaos_julgadores").select("id, descricao").eq("ativo", true).order("descricao"),
         supabase.from("tipos_decisao").select("id, descricao").eq("ativo", true).order("descricao"),
@@ -143,8 +143,9 @@ function RegistroFormPage() {
         supabase.from("tipos_deliberacao").select("*").eq("ativo", true).order("descricao"),
         (supabase as any).from("unidades_tecnicas").select("id, nome, sigla").eq("ativo", true).order("nome"),
         (supabase as any).from("resultados_monitoramento").select("id, descricao").eq("ativo", true).order("ordem"),
+        (supabase as any).from("status_monitoramento_options").select("codigo, descricao, cor, ordem").eq("ativo", true).order("ordem"),
       ]);
-      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [], unidadesTec: ut.data ?? [], resultadosMon: rm.data ?? [] };
+      return { unidades: u.data ?? [], orgaos: o.data ?? [], tiposDecisao: td.data ?? [], tiposJulg: tj.data ?? [], tiposDel: tdel.data ?? [], unidadesTec: ut.data ?? [], resultadosMon: rm.data ?? [], statusOptions: sm.data ?? [] };
     },
   });
 
