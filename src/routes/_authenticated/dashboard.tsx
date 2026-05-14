@@ -19,12 +19,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const COLORS = ["oklch(0.45 0.15 250)", "oklch(0.75 0.15 75)", "oklch(0.65 0.18 145)", "oklch(0.65 0.22 25)", "oklch(0.6 0.05 250)"];
 
 const STATUS_LABELS: Record<string, string> = {
+  nao_iniciado: "Não iniciado",
   em_monitoramento: "Em monitoramento",
   cumprida: "Cumprida",
   descumprida: "Descumprida",
   vencida: "Vencida",
   cancelada: "Cancelada",
 };
+
+const FINALIZADOS = new Set(["cumprida", "descumprida", "vencida", "cancelada"]);
 
 function DashboardPage() {
   const [filtroUnidade, setFiltroUnidade] = useState<string>("__all");
