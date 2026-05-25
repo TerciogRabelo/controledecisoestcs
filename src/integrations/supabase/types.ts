@@ -75,6 +75,7 @@ export type Database = {
           resultado_monitoramento_id: string | null
           status_monitoramento: string
           tipo_deliberacao_id: string | null
+          unidade_acompanhamento_id: string | null
           unidade_medida: string | null
           unidade_tecnica_id: string | null
           valor: number | null
@@ -106,6 +107,7 @@ export type Database = {
           resultado_monitoramento_id?: string | null
           status_monitoramento?: string
           tipo_deliberacao_id?: string | null
+          unidade_acompanhamento_id?: string | null
           unidade_medida?: string | null
           unidade_tecnica_id?: string | null
           valor?: number | null
@@ -137,6 +139,7 @@ export type Database = {
           resultado_monitoramento_id?: string | null
           status_monitoramento?: string
           tipo_deliberacao_id?: string | null
+          unidade_acompanhamento_id?: string | null
           unidade_medida?: string | null
           unidade_tecnica_id?: string | null
           valor?: number | null
@@ -161,6 +164,13 @@ export type Database = {
             columns: ["tipo_deliberacao_id"]
             isOneToOne: false
             referencedRelation: "tipos_deliberacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliberacoes_unidade_acompanhamento_id_fkey"
+            columns: ["unidade_acompanhamento_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_tecnicas"
             referencedColumns: ["id"]
           },
           {

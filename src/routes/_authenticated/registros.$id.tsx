@@ -428,6 +428,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
       resultado_monitoramento_id: d.resultado_monitoramento_id,
       data_verificacao: d.data_verificacao,
       unidade_tecnica_id: d.unidade_tecnica_id,
+      unidade_acompanhamento_id: d.unidade_acompanhamento_id,
       monitoramento_inicio: d.monitoramento_inicio,
       monitoramento_fim: d.monitoramento_fim,
       monitoramento_tipo: d.monitoramento_tipo,
@@ -604,7 +605,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       <Radar className="h-4 w-4" />
                     </div>
                     <div className="leading-tight">
-                      <p className="text-sm font-semibold text-primary">Painel de Monitoramento</p>
+                      <p className="text-sm font-semibold text-primary">Módulo de Monitoramento</p>
                       <p className="text-[11px] text-muted-foreground">Acompanhamento da deliberação pela equipe responsável</p>
                     </div>
                   </div>
@@ -656,6 +657,16 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                           </SelectContent>
                         </Select>
                       </Field>
+                      <div className="col-span-2">
+                        <Field label="Diretoria/Divisão Responsável pelo Acompanhamento">
+                          <SelectField
+                            value={form.unidade_acompanhamento_id ?? null}
+                            onChange={(v) => setForm({ ...form, unidade_acompanhamento_id: v })}
+                            options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
+                            disabled={monitDisabled}
+                          />
+                        </Field>
+                      </div>
                       {form.monitoramento_tipo === "processual" && (
                         <>
                           <Field label="Processo do Monitoramento">
