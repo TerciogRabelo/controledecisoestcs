@@ -574,7 +574,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   <Field label="Unidade Técnica Responsável">
                     <SelectField
                       value={form.unidade_tecnica_id ?? null}
-                      onChange={(v) => setForm((f) => ({
+                      onChange={(v) => setForm((f: any) => ({
                         ...f,
                         unidade_tecnica_id: v,
                         unidade_acompanhamento_id:
