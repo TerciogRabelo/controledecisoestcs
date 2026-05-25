@@ -657,6 +657,16 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                           </SelectContent>
                         </Select>
                       </Field>
+                      <div className="col-span-2">
+                        <Field label="Diretoria/Divisão Responsável pelo Acompanhamento">
+                          <SelectField
+                            value={form.unidade_acompanhamento_id ?? null}
+                            onChange={(v) => setForm({ ...form, unidade_acompanhamento_id: v })}
+                            options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
+                            disabled={monitDisabled}
+                          />
+                        </Field>
+                      </div>
                       {form.monitoramento_tipo === "processual" && (
                         <>
                           <Field label="Processo do Monitoramento">
