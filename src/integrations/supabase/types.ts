@@ -368,6 +368,7 @@ export type Database = {
           criado_por: string | null
           data_decisao: string | null
           data_transito_julgado: string | null
+          gestor_institucional: boolean
           gestor_responsavel: string | null
           houve_deliberacao: boolean
           id: string
@@ -390,6 +391,7 @@ export type Database = {
           criado_por?: string | null
           data_decisao?: string | null
           data_transito_julgado?: string | null
+          gestor_institucional?: boolean
           gestor_responsavel?: string | null
           houve_deliberacao?: boolean
           id?: string
@@ -412,6 +414,7 @@ export type Database = {
           criado_por?: string | null
           data_decisao?: string | null
           data_transito_julgado?: string | null
+          gestor_institucional?: boolean
           gestor_responsavel?: string | null
           houve_deliberacao?: boolean
           id?: string
