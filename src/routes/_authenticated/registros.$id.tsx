@@ -605,7 +605,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       <Radar className="h-4 w-4" />
                     </div>
                     <div className="leading-tight">
-                      <p className="text-sm font-semibold text-primary">Painel de Monitoramento</p>
+                      <p className="text-sm font-semibold text-primary">Módulo de Monitoramento</p>
                       <p className="text-[11px] text-muted-foreground">Acompanhamento da deliberação pela equipe responsável</p>
                     </div>
                   </div>
