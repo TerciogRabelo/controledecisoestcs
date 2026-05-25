@@ -84,7 +84,7 @@ function DashboardPage() {
     const unidadeMap = new Map(data.unidades.map((u) => [u.id, u]));
     const tableRows = r
       .map((x) => {
-        const dels = data.deliberacoes.filter((dd) => dd.registro_decisao_id === x.id);
+        const dels = data.deliberacoes.filter((dd) => dd.registro_decisao_id === x.id && dd.passivel_monitoramento !== false);
         const u = x.unidade_gestora_id ? unidadeMap.get(x.unidade_gestora_id) : null;
         return {
           id: x.id,
