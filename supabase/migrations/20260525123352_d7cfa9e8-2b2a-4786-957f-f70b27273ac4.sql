@@ -1,0 +1,1 @@
+ALTER TABLE public.deliberacoes ADD COLUMN IF NOT EXISTS unidade_acompanhamento_id uuid REFERENCES public.unidades_tecnicas(id);
