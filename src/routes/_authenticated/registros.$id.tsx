@@ -306,21 +306,44 @@ function RegistroFormPage() {
 
       <Card>
         <CardHeader><CardTitle className="text-sm">3. Gestor Responsável</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="CPF/CNPJ *">
-            <CpfCnpjLookup
-              value={form.cpf_cnpj}
-              onChange={(v) => set("cpf_cnpj", v)}
-              onMatch={(nome) => {
-                if (nome && !form.gestor_responsavel) set("gestor_responsavel", nome);
+        <CardContent className="space-y-4">
+          <label className="flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-primary"
+              checked={form.gestor_institucional}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setForm((f) => ({ ...f, gestor_institucional: checked, cpf_cnpj: checked ? "" : f.cpf_cnpj }));
               }}
               disabled={!canEdit}
-              currentRegistroId={isNew ? null : id}
             />
-          </Field>
-          <Field label="Nome do Gestor">
-            <Input value={form.gestor_responsavel} onChange={(e) => set("gestor_responsavel", e.target.value)} disabled={!canEdit} placeholder="Preenchido automaticamente se já cadastrado" />
-          </Field>
+            <div className="leading-tight">
+              <p className="text-sm font-medium">Deliberação institucional</p>
+              <p className="text-xs text-muted-foreground">Não vinculada a um CPF/CNPJ específico — refere-se ao gestor que ocupa o cargo no momento.</p>
+            </div>
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label={form.gestor_institucional ? "CPF/CNPJ (não aplicável)" : "CPF/CNPJ *"}>
+              <CpfCnpjLookup
+                value={form.cpf_cnpj}
+                onChange={(v) => set("cpf_cnpj", v)}
+                onMatch={(nome) => {
+                  if (nome && !form.gestor_responsavel) set("gestor_responsavel", nome);
+                }}
+                disabled={!canEdit || form.gestor_institucional}
+                currentRegistroId={isNew ? null : id}
+              />
+            </Field>
+            <Field label={form.gestor_institucional ? "Cargo / Gestor do Momento" : "Nome do Gestor"}>
+              <Input
+                value={form.gestor_responsavel}
+                onChange={(e) => set("gestor_responsavel", e.target.value)}
+                disabled={!canEdit}
+                placeholder={form.gestor_institucional ? "Ex.: Secretário(a) de Finanças do Município X" : "Preenchido automaticamente se já cadastrado"}
+              />
+            </Field>
+          </div>
         </CardContent>
       </Card>
 
