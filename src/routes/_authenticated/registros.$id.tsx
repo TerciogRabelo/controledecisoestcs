@@ -95,6 +95,7 @@ type RD = {
   data_transito_julgado: string;
   gestor_responsavel: string;
   cpf_cnpj: string;
+  gestor_institucional: boolean;
   observacoes: string;
   unidade_gestora_id: string | null;
   orgao_julgador_id: string | null;
@@ -109,6 +110,7 @@ const empty: RD = {
   data_transito_julgado: "",
   gestor_responsavel: "",
   cpf_cnpj: "",
+  gestor_institucional: false,
   observacoes: "",
   unidade_gestora_id: null,
   orgao_julgador_id: null,
@@ -180,6 +182,7 @@ function RegistroFormPage() {
         data_transito_julgado: registro.data_transito_julgado ?? "",
         gestor_responsavel: registro.gestor_responsavel ?? "",
         cpf_cnpj: registro.cpf_cnpj ?? "",
+        gestor_institucional: (registro as any).gestor_institucional ?? false,
         observacoes: registro.observacoes ?? "",
         unidade_gestora_id: registro.unidade_gestora_id,
         orgao_julgador_id: registro.orgao_julgador_id,
@@ -198,6 +201,10 @@ function RegistroFormPage() {
   const save = async () => {
     if (!form.numero_processo || form.numero_processo.length < 11) {
       toast.error("Informe o número do processo no formato 000000/0000.");
+      return;
+    }
+    if (!form.gestor_institucional && !form.cpf_cnpj?.trim()) {
+      toast.error("Informe o CPF/CNPJ do gestor ou marque como deliberação institucional.");
       return;
     }
     const dateErr = validateDates();
@@ -299,21 +306,44 @@ function RegistroFormPage() {
 
       <Card>
         <CardHeader><CardTitle className="text-sm">3. Gestor Responsável</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="CPF/CNPJ *">
-            <CpfCnpjLookup
-              value={form.cpf_cnpj}
-              onChange={(v) => set("cpf_cnpj", v)}
-              onMatch={(nome) => {
-                if (nome && !form.gestor_responsavel) set("gestor_responsavel", nome);
+        <CardContent className="space-y-4">
+          <label className="flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-primary"
+              checked={form.gestor_institucional}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setForm((f) => ({ ...f, gestor_institucional: checked, cpf_cnpj: checked ? "" : f.cpf_cnpj }));
               }}
               disabled={!canEdit}
-              currentRegistroId={isNew ? null : id}
             />
-          </Field>
-          <Field label="Nome do Gestor">
-            <Input value={form.gestor_responsavel} onChange={(e) => set("gestor_responsavel", e.target.value)} disabled={!canEdit} placeholder="Preenchido automaticamente se já cadastrado" />
-          </Field>
+            <div className="leading-tight">
+              <p className="text-sm font-medium">Deliberação institucional</p>
+              <p className="text-xs text-muted-foreground">Não vinculada a um CPF/CNPJ específico — refere-se ao gestor que ocupa o cargo no momento.</p>
+            </div>
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label={form.gestor_institucional ? "CPF/CNPJ (não aplicável)" : "CPF/CNPJ *"}>
+              <CpfCnpjLookup
+                value={form.cpf_cnpj}
+                onChange={(v) => set("cpf_cnpj", v)}
+                onMatch={(nome) => {
+                  if (nome && !form.gestor_responsavel) set("gestor_responsavel", nome);
+                }}
+                disabled={!canEdit || form.gestor_institucional}
+                currentRegistroId={isNew ? null : id}
+              />
+            </Field>
+            <Field label={form.gestor_institucional ? "Cargo / Gestor do Momento" : "Nome do Gestor"}>
+              <Input
+                value={form.gestor_responsavel}
+                onChange={(e) => set("gestor_responsavel", e.target.value)}
+                disabled={!canEdit}
+                placeholder={form.gestor_institucional ? "Ex.: Secretário(a) de Finanças do Município X" : "Preenchido automaticamente se já cadastrado"}
+              />
+            </Field>
+          </div>
         </CardContent>
       </Card>
 
