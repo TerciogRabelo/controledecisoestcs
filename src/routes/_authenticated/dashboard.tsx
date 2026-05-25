@@ -64,7 +64,7 @@ function DashboardPage() {
       return true;
     });
     const ids = new Set(r.map((x) => x.id));
-    const d = data.deliberacoes.filter((x) => ids.has(x.registro_decisao_id));
+    const d = data.deliberacoes.filter((x) => ids.has(x.registro_decisao_id) && x.passivel_monitoramento !== false);
 
     const statusCount = d.reduce<Record<string, number>>((acc, x) => {
       acc[x.status_monitoramento] = (acc[x.status_monitoramento] ?? 0) + 1;
