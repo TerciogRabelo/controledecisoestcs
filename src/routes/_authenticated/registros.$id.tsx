@@ -95,6 +95,7 @@ type RD = {
   data_transito_julgado: string;
   gestor_responsavel: string;
   cpf_cnpj: string;
+  gestor_institucional: boolean;
   observacoes: string;
   unidade_gestora_id: string | null;
   orgao_julgador_id: string | null;
@@ -109,6 +110,7 @@ const empty: RD = {
   data_transito_julgado: "",
   gestor_responsavel: "",
   cpf_cnpj: "",
+  gestor_institucional: false,
   observacoes: "",
   unidade_gestora_id: null,
   orgao_julgador_id: null,
