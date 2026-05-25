@@ -182,6 +182,7 @@ function RegistroFormPage() {
         data_transito_julgado: registro.data_transito_julgado ?? "",
         gestor_responsavel: registro.gestor_responsavel ?? "",
         cpf_cnpj: registro.cpf_cnpj ?? "",
+        gestor_institucional: (registro as any).gestor_institucional ?? false,
         observacoes: registro.observacoes ?? "",
         unidade_gestora_id: registro.unidade_gestora_id,
         orgao_julgador_id: registro.orgao_julgador_id,
