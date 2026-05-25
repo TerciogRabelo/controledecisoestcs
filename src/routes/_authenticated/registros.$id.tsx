@@ -574,7 +574,14 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   <Field label="Unidade Técnica Responsável">
                     <SelectField
                       value={form.unidade_tecnica_id ?? null}
-                      onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
+                      onChange={(v) => setForm((f: any) => ({
+                        ...f,
+                        unidade_tecnica_id: v,
+                        unidade_acompanhamento_id:
+                          !f.unidade_acompanhamento_id || f.unidade_acompanhamento_id === f.unidade_tecnica_id
+                            ? v
+                            : f.unidade_acompanhamento_id,
+                      }))}
                       options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
                       disabled={delibDisabled}
                     />
@@ -695,6 +702,11 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                             options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
                             disabled={monitDisabled}
                           />
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            {form.unidade_tecnica_id && form.unidade_acompanhamento_id && form.unidade_acompanhamento_id !== form.unidade_tecnica_id
+                              ? "⚠️ Unidade de acompanhamento difere da Unidade Técnica Responsável definida na deliberação."
+                              : "Carregada automaticamente da Unidade Técnica Responsável. Você pode alterar se necessário."}
+                          </p>
                         </Field>
                       </div>
                       {form.monitoramento_tipo === "processual" && (
