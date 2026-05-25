@@ -278,7 +278,7 @@ function RegistroFormPage() {
 
       <Card>
         <CardHeader><CardTitle className="text-sm">2. Decisão</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Field label="Tipo de Decisão">
             <SelectField value={form.tipo_decisao_id} onChange={(v) => set("tipo_decisao_id", v)} options={lookups?.tiposDecisao.map((o) => ({ value: o.id, label: o.descricao })) ?? []} disabled={!canEdit} />
           </Field>
@@ -291,12 +291,15 @@ function RegistroFormPage() {
           <Field label="Tipo de Julgamento">
             <SelectField value={form.tipo_julgamento_id} onChange={(v) => set("tipo_julgamento_id", v)} options={lookups?.tiposJulg.map((o) => ({ value: o.id, label: o.descricao })) ?? []} disabled={!canEdit} />
           </Field>
+          <Field label="Data de Trânsito em Julgado">
+            <Input type="date" max={TODAY} value={form.data_transito_julgado} onChange={(e) => set("data_transito_julgado", e.target.value)} disabled={!canEdit} />
+          </Field>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-sm">3. Gestor Responsável</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="CPF/CNPJ *">
             <CpfCnpjLookup
               value={form.cpf_cnpj}
@@ -311,11 +314,9 @@ function RegistroFormPage() {
           <Field label="Nome do Gestor">
             <Input value={form.gestor_responsavel} onChange={(e) => set("gestor_responsavel", e.target.value)} disabled={!canEdit} placeholder="Preenchido automaticamente se já cadastrado" />
           </Field>
-          <Field label="Data de Trânsito em Julgado">
-            <Input type="date" max={TODAY} value={form.data_transito_julgado} onChange={(e) => set("data_transito_julgado", e.target.value)} disabled={!canEdit} />
-          </Field>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader><CardTitle className="text-sm">4. Observações</CardTitle></CardHeader>
