@@ -428,6 +428,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
       resultado_monitoramento_id: d.resultado_monitoramento_id,
       data_verificacao: d.data_verificacao,
       unidade_tecnica_id: d.unidade_tecnica_id,
+      unidade_acompanhamento_id: d.unidade_acompanhamento_id,
       monitoramento_inicio: d.monitoramento_inicio,
       monitoramento_fim: d.monitoramento_fim,
       monitoramento_tipo: d.monitoramento_tipo,
