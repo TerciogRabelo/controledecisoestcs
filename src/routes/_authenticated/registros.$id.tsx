@@ -607,15 +607,26 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       <p className="text-[11px] text-muted-foreground">Acompanhamento da deliberação pela equipe responsável</p>
                     </div>
                   </div>
-                  <Badge
-                    variant={form.status_monitoramento === "cumprida" ? "default" : form.status_monitoramento === "descumprida" || form.status_monitoramento === "vencida" ? "destructive" : "secondary"}
-                    className="uppercase tracking-wide text-[10px]"
-                  >
-                    {STATUS_LABELS[form.status_monitoramento] ?? form.status_monitoramento}
-                  </Badge>
+                  {form.passivel_monitoramento !== false && (
+                    <Badge
+                      variant={form.status_monitoramento === "cumprida" ? "default" : form.status_monitoramento === "descumprida" || form.status_monitoramento === "vencida" ? "destructive" : "secondary"}
+                      className="uppercase tracking-wide text-[10px]"
+                    >
+                      {STATUS_LABELS[form.status_monitoramento] ?? form.status_monitoramento}
+                    </Badge>
+                  )}
                 </div>
 
+                {form.passivel_monitoramento === false ? (
+                  <div className="p-4">
+                    <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground space-y-2">
+                      <p className="font-medium text-foreground">Esta deliberação não é passível de monitoramento.</p>
+                      <p className="text-xs">Nenhum acompanhamento será exigido. Caso seja necessário monitorar, a equipe de monitoramento pode reativar usando o controle acima ("Passível de monitoramento") e preencher os dados.</p>
+                    </div>
+                  </div>
+                ) : (
                 <div className="p-4 space-y-5">
+
                   {/* Seção 1: Situação */}
                   <section className="space-y-3">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
