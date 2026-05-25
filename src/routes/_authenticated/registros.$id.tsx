@@ -753,7 +753,9 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </div>
                   </section>
                 </div>
+                )}
               </div>
+
 
 
               <DialogFooter>
