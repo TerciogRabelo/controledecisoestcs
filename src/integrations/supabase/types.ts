@@ -67,6 +67,7 @@ export type Database = {
             | Database["public"]["Enums"]["tipo_monitoramento"]
             | null
           observacao: string | null
+          passivel_monitoramento: boolean
           prazo_dias: number | null
           registro_decisao_id: string
           resposta_gestor: string | null
@@ -97,6 +98,7 @@ export type Database = {
             | Database["public"]["Enums"]["tipo_monitoramento"]
             | null
           observacao?: string | null
+          passivel_monitoramento?: boolean
           prazo_dias?: number | null
           registro_decisao_id: string
           resposta_gestor?: string | null
@@ -127,6 +129,7 @@ export type Database = {
             | Database["public"]["Enums"]["tipo_monitoramento"]
             | null
           observacao?: string | null
+          passivel_monitoramento?: boolean
           prazo_dias?: number | null
           registro_decisao_id?: string
           resposta_gestor?: string | null

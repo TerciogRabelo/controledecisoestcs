@@ -67,6 +67,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, Plus, Trash2, Loader2, Pencil, Activity, CalendarRange, ClipboardCheck, Paperclip, FileSearch, Radar } from "lucide-react";
 import { toast } from "sonner";
 import { maskProcesso, maskCpfCnpj, formatDate } from "@/lib/masks";
@@ -400,7 +401,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const emptyForm = { status_monitoramento: "nao_iniciado", deliberacao_solidaria: false, anexos: [] as any[] };
+  const emptyForm = { status_monitoramento: "nao_iniciado", deliberacao_solidaria: false, passivel_monitoramento: true, anexos: [] as any[] };
   const [form, setForm] = useState<any>(emptyForm);
   const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
@@ -414,6 +415,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
       tipo_deliberacao_id: d.tipo_deliberacao_id,
       status_monitoramento: d.status_monitoramento,
       deliberacao_solidaria: d.deliberacao_solidaria,
+      passivel_monitoramento: d.passivel_monitoramento ?? true,
       descricao: d.descricao,
       observacao: d.observacao,
       prazo_dias: d.prazo_dias,
@@ -575,8 +577,22 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} disabled={delibDisabled} />
                     </Field>
                   </div>
+                  <div className="col-span-2">
+                    <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium">Passível de monitoramento</p>
+                        <p className="text-xs text-muted-foreground">Defina se esta deliberação será acompanhada pela equipe de monitoramento.</p>
+                      </div>
+                      <Switch
+                        checked={form.passivel_monitoramento !== false}
+                        onCheckedChange={(v) => setForm({ ...form, passivel_monitoramento: v })}
+                        disabled={delibDisabled && monitDisabled}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
+
 
               {/* Bloco 2: Monitoramento — painel dedicado */}
               <div className="mt-6 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] via-background to-background shadow-sm overflow-hidden">
@@ -591,15 +607,26 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       <p className="text-[11px] text-muted-foreground">Acompanhamento da deliberação pela equipe responsável</p>
                     </div>
                   </div>
-                  <Badge
-                    variant={form.status_monitoramento === "cumprida" ? "default" : form.status_monitoramento === "descumprida" || form.status_monitoramento === "vencida" ? "destructive" : "secondary"}
-                    className="uppercase tracking-wide text-[10px]"
-                  >
-                    {STATUS_LABELS[form.status_monitoramento] ?? form.status_monitoramento}
-                  </Badge>
+                  {form.passivel_monitoramento !== false && (
+                    <Badge
+                      variant={form.status_monitoramento === "cumprida" ? "default" : form.status_monitoramento === "descumprida" || form.status_monitoramento === "vencida" ? "destructive" : "secondary"}
+                      className="uppercase tracking-wide text-[10px]"
+                    >
+                      {STATUS_LABELS[form.status_monitoramento] ?? form.status_monitoramento}
+                    </Badge>
+                  )}
                 </div>
 
+                {form.passivel_monitoramento === false ? (
+                  <div className="p-4">
+                    <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground space-y-2">
+                      <p className="font-medium text-foreground">Esta deliberação não é passível de monitoramento.</p>
+                      <p className="text-xs">Nenhum acompanhamento será exigido. Caso seja necessário monitorar, a equipe de monitoramento pode reativar usando o controle acima ("Passível de monitoramento") e preencher os dados.</p>
+                    </div>
+                  </div>
+                ) : (
                 <div className="p-4 space-y-5">
+
                   {/* Seção 1: Situação */}
                   <section className="space-y-3">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -726,7 +753,9 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                     </div>
                   </section>
                 </div>
+                )}
               </div>
+
 
 
               <DialogFooter>
