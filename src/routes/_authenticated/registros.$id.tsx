@@ -401,7 +401,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const emptyForm = { status_monitoramento: "nao_iniciado", deliberacao_solidaria: false, anexos: [] as any[] };
+  const emptyForm = { status_monitoramento: "nao_iniciado", deliberacao_solidaria: false, passivel_monitoramento: true, anexos: [] as any[] };
   const [form, setForm] = useState<any>(emptyForm);
   const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
