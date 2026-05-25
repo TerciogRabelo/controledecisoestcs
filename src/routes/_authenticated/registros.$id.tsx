@@ -203,6 +203,10 @@ function RegistroFormPage() {
       toast.error("Informe o número do processo no formato 000000/0000.");
       return;
     }
+    if (!form.gestor_institucional && !form.cpf_cnpj?.trim()) {
+      toast.error("Informe o CPF/CNPJ do gestor ou marque como deliberação institucional.");
+      return;
+    }
     const dateErr = validateDates();
     if (dateErr) { toast.error(dateErr); return; }
     setSaving(true);
