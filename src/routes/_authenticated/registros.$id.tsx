@@ -577,8 +577,22 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} disabled={delibDisabled} />
                     </Field>
                   </div>
+                  <div className="col-span-2">
+                    <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium">Passível de monitoramento</p>
+                        <p className="text-xs text-muted-foreground">Defina se esta deliberação será acompanhada pela equipe de monitoramento.</p>
+                      </div>
+                      <Switch
+                        checked={form.passivel_monitoramento !== false}
+                        onCheckedChange={(v) => setForm({ ...form, passivel_monitoramento: v })}
+                        disabled={delibDisabled && monitDisabled}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
+
 
               {/* Bloco 2: Monitoramento — painel dedicado */}
               <div className="mt-6 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] via-background to-background shadow-sm overflow-hidden">
