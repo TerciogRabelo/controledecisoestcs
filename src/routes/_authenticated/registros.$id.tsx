@@ -578,104 +578,156 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                 </div>
               </div>
 
-              {/* Bloco 2: Monitoramento */}
-              <div className="rounded-md border-2 border-dashed border-primary/40 bg-primary/5 p-4 space-y-3 mt-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Monitoramento</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Status">
-                    <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })} disabled={monitDisabled}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(statusOptions.length > 0
-                          ? statusOptions.map((s) => ({ value: s.codigo, label: s.descricao }))
-                          : Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))
-                        ).map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="Tipo de Monitoramento">
-                    <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })} disabled={monitDisabled}>
-                      <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="processual">Processual</SelectItem>
-                        <SelectItem value="extraprocessual">Extraprocessual (sem processo)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="Início do Monitoramento">
-                    <Input type="date" value={form.monitoramento_inicio ?? ""} onChange={(e) => setForm({ ...form, monitoramento_inicio: e.target.value })} disabled={monitDisabled} />
-                  </Field>
-                  <Field label="Fim Previsto do Monitoramento">
-                    <Input type="date" value={form.monitoramento_fim ?? ""} onChange={(e) => setForm({ ...form, monitoramento_fim: e.target.value })} disabled={monitDisabled} />
-                  </Field>
-                  {form.monitoramento_tipo === "processual" && (
-                    <>
-                      <Field label="Processo do Monitoramento">
-                        <Select
-                          value={form.monitoramento_processo_origem === true ? "origem" : form.monitoramento_processo_origem === false ? "outro" : ""}
-                          onValueChange={(v) => setForm({ ...form, monitoramento_processo_origem: v === "origem" })}
-                          disabled={monitDisabled}
-                        >
-                          <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+              {/* Bloco 2: Monitoramento — painel dedicado */}
+              <div className="mt-6 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/[0.07] via-background to-background shadow-sm overflow-hidden">
+                {/* Cabeçalho do painel */}
+                <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-primary/20 bg-primary/10">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center ring-1 ring-primary/25">
+                      <Radar className="h-4 w-4" />
+                    </div>
+                    <div className="leading-tight">
+                      <p className="text-sm font-semibold text-primary">Painel de Monitoramento</p>
+                      <p className="text-[11px] text-muted-foreground">Acompanhamento da deliberação pela equipe responsável</p>
+                    </div>
+                  </div>
+                  <Badge
+                    variant={form.status_monitoramento === "cumprida" ? "default" : form.status_monitoramento === "descumprida" || form.status_monitoramento === "vencida" ? "destructive" : "secondary"}
+                    className="uppercase tracking-wide text-[10px]"
+                  >
+                    {STATUS_LABELS[form.status_monitoramento] ?? form.status_monitoramento}
+                  </Badge>
+                </div>
+
+                <div className="p-4 space-y-5">
+                  {/* Seção 1: Situação */}
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <Activity className="h-3.5 w-3.5 text-primary" /> Situação
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field label="Status">
+                        <Select value={form.status_monitoramento} onValueChange={(v) => setForm({ ...form, status_monitoramento: v })} disabled={monitDisabled}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="origem">No processo de origem ({numeroProcessoOrigem})</SelectItem>
-                            <SelectItem value="outro">Em outro processo</SelectItem>
+                            {(statusOptions.length > 0
+                              ? statusOptions.map((s) => ({ value: s.codigo, label: s.descricao }))
+                              : Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))
+                            ).map((o) => (
+                              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </Field>
-                      {form.monitoramento_processo_origem === false && (
-                        <Field label="Número do Outro Processo *">
-                          <Input value={form.monitoramento_numero_processo ?? ""} onChange={(e) => setForm({ ...form, monitoramento_numero_processo: maskProcesso(e.target.value) })} placeholder="000000/0000" disabled={monitDisabled} />
-                        </Field>
+                      <Field label="Tipo de Monitoramento">
+                        <Select value={form.monitoramento_tipo ?? ""} onValueChange={(v) => setForm({ ...form, monitoramento_tipo: v })} disabled={monitDisabled}>
+                          <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="processual">Processual</SelectItem>
+                            <SelectItem value="extraprocessual">Extraprocessual (sem processo)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      {form.monitoramento_tipo === "processual" && (
+                        <>
+                          <Field label="Processo do Monitoramento">
+                            <Select
+                              value={form.monitoramento_processo_origem === true ? "origem" : form.monitoramento_processo_origem === false ? "outro" : ""}
+                              onValueChange={(v) => setForm({ ...form, monitoramento_processo_origem: v === "origem" })}
+                              disabled={monitDisabled}
+                            >
+                              <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="origem">No processo de origem ({numeroProcessoOrigem})</SelectItem>
+                                <SelectItem value="outro">Em outro processo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </Field>
+                          {form.monitoramento_processo_origem === false && (
+                            <Field label="Número do Outro Processo *">
+                              <Input value={form.monitoramento_numero_processo ?? ""} onChange={(e) => setForm({ ...form, monitoramento_numero_processo: maskProcesso(e.target.value) })} placeholder="000000/0000" disabled={monitDisabled} />
+                            </Field>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                  <Field label="Data de Verificação">
-                    <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} disabled={monitDisabled} />
-                  </Field>
-                  <div className="col-span-2">
-                    <Field label="Resposta do Gestor">
-                      <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} disabled={monitDisabled} />
-                    </Field>
-                  </div>
-                  <div className="col-span-2">
-                  <Field label="Resultado do Monitoramento">
-                    <SelectField
-                      value={form.resultado_monitoramento_id ?? null}
-                      onChange={(v) => setForm({ ...form, resultado_monitoramento_id: v })}
-                      options={resultadosMon.map((r) => ({ value: r.id, label: r.descricao }))}
-                      disabled={monitDisabled}
-                    />
-                  </Field>
-                  <div className="col-span-2">
-                    <Field label="Detalhamento do Resultado (opcional)">
-                      <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} disabled={monitDisabled} />
-                    </Field>
-                  </div>
-                  </div>
-                  <div className="col-span-2">
-                    <Field label="Evidências">
-                      <div className="space-y-2">
-                        <Input type="file" multiple disabled={uploading || monitDisabled} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
-                        {(form.anexos ?? []).length > 0 && (
-                          <ul className="text-xs space-y-1">
-                            {(form.anexos ?? []).map((a: any) => (
-                              <li key={a.path} className="flex items-center justify-between bg-background border border-border rounded px-2 py-1">
-                                <button type="button" className="truncate text-left hover:underline flex-1" onClick={() => downloadAnexo(a.path)}>{a.nome}</button>
-                                {!monitDisabled && (
-                                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAnexo(a.path)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
+                    </div>
+                  </section>
+
+                  {/* Seção 2: Cronograma */}
+                  <section className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <CalendarRange className="h-3.5 w-3.5 text-primary" /> Cronograma
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <Field label="Início">
+                        <Input type="date" value={form.monitoramento_inicio ?? ""} onChange={(e) => setForm({ ...form, monitoramento_inicio: e.target.value })} disabled={monitDisabled} />
+                      </Field>
+                      <Field label="Fim Previsto">
+                        <Input type="date" value={form.monitoramento_fim ?? ""} onChange={(e) => setForm({ ...form, monitoramento_fim: e.target.value })} disabled={monitDisabled} />
+                      </Field>
+                      <Field label="Data de Verificação">
+                        <Input type="date" max={TODAY} value={form.data_verificacao ?? ""} onChange={(e) => setForm({ ...form, data_verificacao: e.target.value })} disabled={monitDisabled} />
+                      </Field>
+                    </div>
+                  </section>
+
+                  {/* Seção 3: Verificação e Resultado */}
+                  <section className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <ClipboardCheck className="h-3.5 w-3.5 text-primary" /> Verificação & Resultado
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <Field label="Resposta do Gestor">
+                          <Textarea value={form.resposta_gestor ?? ""} onChange={(e) => setForm({ ...form, resposta_gestor: e.target.value })} rows={2} disabled={monitDisabled} />
+                        </Field>
                       </div>
-                    </Field>
-                  </div>
+                      <div className="col-span-2">
+                        <Field label="Resultado do Monitoramento">
+                          <SelectField
+                            value={form.resultado_monitoramento_id ?? null}
+                            onChange={(v) => setForm({ ...form, resultado_monitoramento_id: v })}
+                            options={resultadosMon.map((r) => ({ value: r.id, label: r.descricao }))}
+                            disabled={monitDisabled}
+                          />
+                        </Field>
+                      </div>
+                      <div className="col-span-2">
+                        <Field label="Detalhamento do Resultado (opcional)">
+                          <Textarea value={form.resultado_monitoramento ?? ""} onChange={(e) => setForm({ ...form, resultado_monitoramento: e.target.value })} rows={2} disabled={monitDisabled} />
+                        </Field>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Seção 4: Evidências */}
+                  <section className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <Paperclip className="h-3.5 w-3.5 text-primary" /> Evidências
+                    </div>
+                    <div className="space-y-2">
+                      <Input type="file" multiple disabled={uploading || monitDisabled} onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }} />
+                      {(form.anexos ?? []).length === 0 ? (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground border border-dashed border-border rounded-md px-3 py-2">
+                          <FileSearch className="h-3.5 w-3.5" /> Nenhuma evidência anexada ainda.
+                        </div>
+                      ) : (
+                        <ul className="text-xs space-y-1">
+                          {(form.anexos ?? []).map((a: any) => (
+                            <li key={a.path} className="flex items-center justify-between bg-background border border-border rounded px-2 py-1">
+                              <button type="button" className="truncate text-left hover:underline flex-1" onClick={() => downloadAnexo(a.path)}>{a.nome}</button>
+                              {!monitDisabled && (
+                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAnexo(a.path)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </section>
                 </div>
               </div>
+
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
