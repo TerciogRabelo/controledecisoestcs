@@ -415,6 +415,7 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
       tipo_deliberacao_id: d.tipo_deliberacao_id,
       status_monitoramento: d.status_monitoramento,
       deliberacao_solidaria: d.deliberacao_solidaria,
+      passivel_monitoramento: d.passivel_monitoramento ?? true,
       descricao: d.descricao,
       observacao: d.observacao,
       prazo_dias: d.prazo_dias,
