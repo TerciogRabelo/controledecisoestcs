@@ -38,7 +38,7 @@ function DashboardPage() {
     queryFn: async () => {
       const [registros, deliberacoes, unidades, tiposDel, unidadesTec] = await Promise.all([
         supabase.from("registros_decisao").select("id, numero_processo, status_registro, houve_deliberacao, quantidade_deliberacoes, data_decisao, unidade_gestora_id, orgao_julgador_id, gestor_responsavel, cpf_cnpj"),
-        supabase.from("deliberacoes").select("id, registro_decisao_id, status_monitoramento, prazo_dias, criado_em, tipo_deliberacao_id, unidade_tecnica_id"),
+        supabase.from("deliberacoes").select("id, registro_decisao_id, status_monitoramento, prazo_dias, criado_em, tipo_deliberacao_id, unidade_tecnica_id, passivel_monitoramento"),
         supabase.from("unidades_gestoras").select("id, nome_unidade, sigla"),
         supabase.from("tipos_deliberacao").select("id, descricao, cor"),
         supabase.from("unidades_tecnicas").select("id, nome, sigla"),
@@ -64,7 +64,7 @@ function DashboardPage() {
       return true;
     });
     const ids = new Set(r.map((x) => x.id));
-    const d = data.deliberacoes.filter((x) => ids.has(x.registro_decisao_id));
+    const d = data.deliberacoes.filter((x) => ids.has(x.registro_decisao_id) && x.passivel_monitoramento !== false);
 
     const statusCount = d.reduce<Record<string, number>>((acc, x) => {
       acc[x.status_monitoramento] = (acc[x.status_monitoramento] ?? 0) + 1;
@@ -84,7 +84,7 @@ function DashboardPage() {
     const unidadeMap = new Map(data.unidades.map((u) => [u.id, u]));
     const tableRows = r
       .map((x) => {
-        const dels = data.deliberacoes.filter((dd) => dd.registro_decisao_id === x.id);
+        const dels = data.deliberacoes.filter((dd) => dd.registro_decisao_id === x.id && dd.passivel_monitoramento !== false);
         const u = x.unidade_gestora_id ? unidadeMap.get(x.unidade_gestora_id) : null;
         return {
           id: x.id,
