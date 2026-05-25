@@ -803,10 +803,17 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={d.status_monitoramento === "cumprida" ? "default" : d.status_monitoramento === "descumprida" || d.status_monitoramento === "vencida" ? "destructive" : "secondary"}>
-                        {STATUS_LABELS[d.status_monitoramento] ?? d.status_monitoramento}
-                      </Badge>
+                      {d.passivel_monitoramento === false ? (
+                        <Badge variant="outline" className="text-muted-foreground border-dashed">
+                          Não passível
+                        </Badge>
+                      ) : (
+                        <Badge variant={d.status_monitoramento === "cumprida" ? "default" : d.status_monitoramento === "descumprida" || d.status_monitoramento === "vencida" ? "destructive" : "secondary"}>
+                          {STATUS_LABELS[d.status_monitoramento] ?? d.status_monitoramento}
+                        </Badge>
+                      )}
                     </TableCell>
+
                     <TableCell className="text-sm">{formatDate(d.criado_em?.slice(0, 10))}</TableCell>
                     <TableCell>
                       {(() => {
