@@ -38,7 +38,7 @@ function DashboardPage() {
     queryFn: async () => {
       const [registros, deliberacoes, unidades, tiposDel, unidadesTec] = await Promise.all([
         supabase.from("registros_decisao").select("id, numero_processo, status_registro, houve_deliberacao, quantidade_deliberacoes, data_decisao, unidade_gestora_id, orgao_julgador_id, gestor_responsavel, cpf_cnpj"),
-        supabase.from("deliberacoes").select("id, registro_decisao_id, status_monitoramento, prazo_dias, criado_em, tipo_deliberacao_id, unidade_tecnica_id"),
+        supabase.from("deliberacoes").select("id, registro_decisao_id, status_monitoramento, prazo_dias, criado_em, tipo_deliberacao_id, unidade_tecnica_id, passivel_monitoramento"),
         supabase.from("unidades_gestoras").select("id, nome_unidade, sigla"),
         supabase.from("tipos_deliberacao").select("id, descricao, cor"),
         supabase.from("unidades_tecnicas").select("id, nome, sigla"),
