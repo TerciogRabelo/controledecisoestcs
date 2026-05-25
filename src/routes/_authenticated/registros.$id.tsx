@@ -67,7 +67,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Plus, Trash2, Loader2, Pencil } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, Loader2, Pencil, Activity, CalendarRange, ClipboardCheck, Paperclip, FileSearch, Radar } from "lucide-react";
 import { toast } from "sonner";
 import { maskProcesso, maskCpfCnpj, formatDate } from "@/lib/masks";
 import { useAuth } from "@/lib/auth-context";
