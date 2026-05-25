@@ -574,7 +574,14 @@ function DeliberacoesGrid({ registroId, numeroProcessoOrigem, tipos, unidadesTec
                   <Field label="Unidade Técnica Responsável">
                     <SelectField
                       value={form.unidade_tecnica_id ?? null}
-                      onChange={(v) => setForm({ ...form, unidade_tecnica_id: v })}
+                      onChange={(v) => setForm((f) => ({
+                        ...f,
+                        unidade_tecnica_id: v,
+                        unidade_acompanhamento_id:
+                          !f.unidade_acompanhamento_id || f.unidade_acompanhamento_id === f.unidade_tecnica_id
+                            ? v
+                            : f.unidade_acompanhamento_id,
+                      }))}
                       options={unidadesTec.map((u) => ({ value: u.id, label: `${u.sigla ? u.sigla + " — " : ""}${u.nome}` }))}
                       disabled={delibDisabled}
                     />
